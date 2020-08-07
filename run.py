@@ -1,3 +1,4 @@
+import os
 import sys
 
 from api import YoutubeAPI
@@ -12,6 +13,7 @@ word_to_extract = sys.argv[3]
 
 api = YoutubeAPI(api_key)
 
+
 print("> Get channel ID")
 search_results = api.search(
     max_results_count=1,
@@ -21,3 +23,21 @@ search_results = api.search(
     maxResults="1",
 )
 channel_id = search_results[0]["id"]["channelId"]
+
+
+print("> Get videos list")
+search_results = api.search(
+    channelId=channel_id,
+    part="snippet,id",
+    type="video",
+    order="date",
+    maxResults="50",
+)
+
+videos = []
+for search_item in search_results:
+    if search_item["id"]["kind"] == "youtube#video":
+        videos.append(search_item)
+
+print("> Process videos")
+# TODO
