@@ -17,8 +17,8 @@ class YoutubeAPI:
             url += f"&{k}={v}"
         return url
 
-    def search(self, max_results_count=500, **kwargs):
-        search_url = self._append_args(f"{self.api_url}/search?", kwargs)
+    def _req(self, endpoint, max_results_count=500, **kwargs):
+        search_url = self._append_args(f"{self.api_url}/{endpoint}?", kwargs)
 
         results = []
         url = search_url
@@ -35,3 +35,9 @@ class YoutubeAPI:
             url = f"{search_url}&pageToken={next_page_token}"
 
         return results
+
+    def search(self, **kwargs):
+        self._req("search", **kwargs)
+
+    def captions(self, **kwargs):
+        self._req("captions", **kwargs)
