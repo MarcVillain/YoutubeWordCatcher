@@ -145,9 +145,10 @@ def _clean_vtt(file):
     return content
 
 
-# Export data
-with open("data.txt", "w") as f:
-    f.write("ID,count")
+if os.getenv("EXPORT_DATA", "1") == "1":
+    with open("data.txt", "a") as f:
+        f.write("ID,count\n")
+
 
 print("> Process videos")
 build_dir = "/Users/Marc/Downloads/videos"
@@ -159,6 +160,15 @@ for video in videos:
     video_url = f"http://youtube.com/watch?v={video_id}"
 
     video_path = f"{build_dir}/{video_id}.mp4"
+    subtitles_path = f"{build_dir}/{video_id}.en.vtt"
+    cut_clip_path = f"{build_dir}/clips/{video_id}.mp4"
+
+    if os.path.exists(cut_clip_path):
+        print(f"{video_id} >> Video clip already created")
+        cut_clip_video = VideoFileClip(cut_clip_path)
+        cut_clips.append(cut_clip_video)
+        continue
+
     ydl_config = {
         "outtmpl": video_path,
         "writesubtitles": True,
@@ -169,7 +179,6 @@ for video in videos:
     with YoutubeDL(ydl_config) as ydl:
         ydl.download([video_url])
 
-    subtitles_path = f"{build_dir}/{video_id}.en.vtt"
     if os.path.exists(subtitles_path):
         print(f"{video_id} >> Extract timestamps where the word {word_to_extract} is pronounced")
         with open(subtitles_path, "r") as f:
@@ -207,16 +216,16 @@ for video in videos:
             clip_comp = CompositeVideoClip([clip_video, clip_text_title, clip_text_counter])
             clips.append(clip_comp)
 
-        # Export data
-        with open("data.txt", "a") as f:
-            f.write(f"{video_id},{episode_counter}")
+        if os.getenv("EXPORT_DATA", "1") == "1":
+            with open("data.txt", "a") as f:
+                f.write(f"{video_id},{episode_counter}\n")
 
-        print(f"{video_id} >> Concatenate the cuts")
-        cut_clip_path = f"{build_dir}/clips/{video_id}.mp4"
-        cut_clip = concatenate_videoclips(clips)
-        cut_clip.write_videofile(cut_clip_path)
-        cut_clip_video = VideoFileClip(cut_clip_path)
-        cut_clips.append(cut_clip_video)
+        if len(timestamps) > 0:
+            print(f"{video_id} >> Concatenate the cuts")
+            cut_clip = concatenate_videoclips(clips)
+            cut_clip.write_videofile(cut_clip_path)
+            cut_clip_video = VideoFileClip(cut_clip_path)
+            cut_clips.append(cut_clip_video)
     else:
         print(f"{video_id} >> No subtitles for video")
 
@@ -229,6 +238,7 @@ for video in videos:
         os.remove(subtitles_path)
     except OSError:
         pass
+
 
 print("> Concatenate all the clips")
 final_clip_path = f"{build_dir}/{word_to_extract}_{channel_name}.mp4"
