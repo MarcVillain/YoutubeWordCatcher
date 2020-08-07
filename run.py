@@ -1,15 +1,16 @@
+import os
 import re
 
 import difflib
+import sys
 
 import regex
+from moviepy.video.VideoClip import TextClip
+from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from moviepy.video.compositing.concatenate import concatenate_videoclips
 from moviepy.video.io.VideoFileClip import VideoFileClip
 
 from api import YoutubeAPI
-from local_values import LocalValue
-from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
-from pip._vendor import requests
 from youtube_dl import YoutubeDL
 
 if len(sys.argv) < 4:
@@ -19,6 +20,10 @@ if len(sys.argv) < 4:
 api_key = sys.argv[1]
 channel_name = sys.argv[2]
 word_to_extract = sys.argv[3]
+
+max_clip_length = 0.8
+start_clip_delay = -0.25
+end_clip_delay = 0.25
 
 api = YoutubeAPI(api_key)
 
@@ -47,6 +52,7 @@ videos = []
 for search_item in search_results:
     if search_item["id"]["kind"] == "youtube#video":
         videos.append(search_item)
+videos.reverse()
 
 
 def str_to_sec(timestamp):
@@ -139,40 +145,92 @@ def _clean_vtt(file):
     return content
 
 
+# Export data
+with open("data.txt", "w") as f:
+    f.write("ID,count")
+
 print("> Process videos")
 build_dir = "/Users/Marc/Downloads/videos"
 cut_clips = []
-for video in videos[:1]:
+total_counter = 0
+for video in videos:
     video_id = video["id"]["videoId"]
+    video_title = video["snippet"]["title"]
     video_url = f"http://youtube.com/watch?v={video_id}"
 
+    video_path = f"{build_dir}/{video_id}.mp4"
     ydl_config = {
-        "outtmpl": f"{build_dir}/{video_id}.mp4",
+        "outtmpl": video_path,
         "writesubtitles": True,
         "subtitleslangs": ["en"],
         "writeautomaticsub": True
     }
-    print(f">> Download video {video_id}")
+    print(f"{video_id} >> Download video")
     with YoutubeDL(ydl_config) as ydl:
         ydl.download([video_url])
 
-    print(f">> Extract timestamps where the word {word_to_extract} is pronounced")
-    with open(f"{build_dir}/{video_id}.en.vtt", "r") as f:
-        content = _clean_vtt(f)
-        pattern = r"<(\d{2}:\d{2}:\d{2}.\d{3})>([^<]+)<(\d{2}:\d{2}:\d{2}.\d{3})>"
-        timestamps = [match for match in regex.findall(pattern, content, overlapped=True) if word_to_extract in match[1]]
+    subtitles_path = f"{build_dir}/{video_id}.en.vtt"
+    if os.path.exists(subtitles_path):
+        print(f"{video_id} >> Extract timestamps where the word {word_to_extract} is pronounced")
+        with open(subtitles_path, "r") as f:
+            content = _clean_vtt(f)
+            pattern = r"<(\d{2}:\d{2}:\d{2}.\d{3})>([^<]+)<(\d{2}:\d{2}:\d{2}.\d{3})>"
+            timestamps = [match for match in regex.findall(pattern, content, overlapped=True) if word_to_extract in match[1]]
 
-        print(">> Cut the clip")
+        print(f"{video_id} >> Cut and compose the clips")
         clips = []
+        episode_counter = 0
         for start, _, end in timestamps:
-            clips.append(VideoFileClip(f"{build_dir}/{video_id}.mp4").subclip(str_to_sec(start) - 0.15, str_to_sec(end) + 0.15))
+            episode_counter += 1
+            total_counter += 1
 
-        print(">> Concatenate the cuts")
+            video_start = str_to_sec(start) + start_clip_delay
+            video_end = str_to_sec(end) + end_clip_delay
+            # Prevent clip from being too long
+            if video_end - video_start > max_clip_length:
+                video_end = video_start + max_clip_length
+            clip_video = VideoFileClip(f"{build_dir}/{video_id}.mp4").subclip(video_start, video_end)
+            clip_text_title = TextClip(
+                txt=f"{video_title}\nhttps://youtube.com/watch?v={video_id}\nTime: {start}",
+                fontsize=30,
+                color="black",
+                bg_color="white",
+                align="west",
+            ).set_duration(clip_video.duration).set_position(("left", "bottom"))
+            clip_text_counter = TextClip(
+                txt=f"Episode counter: {episode_counter}\nTotal counter  : {total_counter}",
+                fontsize=30,
+                color="black",
+                bg_color="white",
+                align="west",
+            ).set_duration(clip_video.duration).set_position(("left", "top"))
+            clip_comp = CompositeVideoClip([clip_video, clip_text_title, clip_text_counter])
+            clips.append(clip_comp)
+
+        # Export data
+        with open("data.txt", "a") as f:
+            f.write(f"{video_id},{episode_counter}")
+
+        print(f"{video_id} >> Concatenate the cuts")
+        cut_clip_path = f"{build_dir}/clips/{video_id}.mp4"
         cut_clip = concatenate_videoclips(clips)
-        cut_clip.write_videofile(f"{build_dir}/{video_id}_cut.mp4")
-        cut_clips.append(VideoFileClip(f"{build_dir}/{video_id}_cut.mp4"))
+        cut_clip.write_videofile(cut_clip_path)
+        cut_clip_video = VideoFileClip(cut_clip_path)
+        cut_clips.append(cut_clip_video)
+    else:
+        print(f"{video_id} >> No subtitles for video")
 
-print("> Concatenate the cut clips")
+    print(f"{video_id} >> Remove unnecessary files")
+    try:
+        os.remove(video_path)
+    except OSError:
+        pass
+    try:
+        os.remove(subtitles_path)
+    except OSError:
+        pass
+
+print("> Concatenate all the clips")
+final_clip_path = f"{build_dir}/{word_to_extract}_{channel_name}.mp4"
 final_clip = concatenate_videoclips(cut_clips)
-final_clip.write_videofile(f"{build_dir}/final.mp4")
-
+final_clip.write_videofile(final_clip_path)

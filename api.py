@@ -37,7 +37,7 @@ class YoutubeAPI:
         return results
 
     def search(self, **kwargs):
-        self._req("search", **kwargs)
+        return self._req("search", **kwargs)
 
     def captions(self, **kwargs):
-        self._req("captions", **kwargs)
+        return self._req("captions", **kwargs)
