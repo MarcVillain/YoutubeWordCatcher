@@ -159,7 +159,7 @@ for video in videos:
     video_title = video["snippet"]["title"]
     video_url = f"http://youtube.com/watch?v={video_id}"
 
-    video_path = f"{build_dir}/{video_id}.mp4"
+    video_file_path = f"{build_dir}/{video_id}.mp4"
     subtitles_path = f"{build_dir}/{video_id}.en.vtt"
     cut_clip_path = f"{build_dir}/clips/{video_id}.mp4"
 
@@ -169,15 +169,18 @@ for video in videos:
         cut_clips.append(cut_clip_video)
         continue
 
-    ydl_config = {
-        "outtmpl": video_path,
-        "writesubtitles": True,
-        "subtitleslangs": ["en"],
-        "writeautomaticsub": True
-    }
-    print(f"{video_id} >> Download video")
-    with YoutubeDL(ydl_config) as ydl:
-        ydl.download([video_url])
+    if os.path.exists(video_file_path):
+        print(f"{video_id} >> Video file already downloaded")
+    else:
+        ydl_config = {
+            "outtmpl": video_file_path,
+            "writesubtitles": True,
+            "subtitleslangs": ["en"],
+            "writeautomaticsub": True
+        }
+        print(f"{video_id} >> Download video file")
+        with YoutubeDL(ydl_config) as ydl:
+            ydl.download([video_url])
 
     if os.path.exists(subtitles_path):
         print(f"{video_id} >> Extract timestamps where the word {word_to_extract} is pronounced")
@@ -222,16 +225,19 @@ for video in videos:
 
         if len(timestamps) > 0:
             print(f"{video_id} >> Concatenate the cuts")
-            cut_clip = concatenate_videoclips(clips)
-            cut_clip.write_videofile(cut_clip_path)
-            cut_clip_video = VideoFileClip(cut_clip_path)
-            cut_clips.append(cut_clip_video)
+            try:
+                cut_clip = concatenate_videoclips(clips)
+                cut_clip.write_videofile(cut_clip_path)
+                cut_clip_video = VideoFileClip(cut_clip_path)
+                cut_clips.append(cut_clip_video)
+            except OSError as e:
+                print(f"{video_id} >> Something went wrong: {e}")
     else:
         print(f"{video_id} >> No subtitles for video")
 
     print(f"{video_id} >> Remove unnecessary files")
     try:
-        os.remove(video_path)
+        os.remove(video_file_path)
     except OSError:
         pass
     try:
@@ -240,7 +246,10 @@ for video in videos:
         pass
 
 
-print("> Concatenate all the clips")
-final_clip_path = f"{build_dir}/{word_to_extract}_{channel_name}.mp4"
-final_clip = concatenate_videoclips(cut_clips)
-final_clip.write_videofile(final_clip_path)
+if len(cut_clips) > 0:
+    print("> Concatenate all the clips")
+    final_clip_path = f"{build_dir}/{word_to_extract}_{channel_name}.mp4"
+    final_clip = concatenate_videoclips(cut_clips)
+    final_clip.write_videofile(final_clip_path)
+else:
+    print("> No clip to concatenate")
