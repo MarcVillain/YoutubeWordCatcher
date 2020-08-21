@@ -19,6 +19,13 @@ In order to run properly, you need to get a Youtube API key, which you can obtai
 python ./run.py <api_key> <channel_name> <word>
 ```
 
+# TODO
+
+* Add option for clips without things on top
+* Multithread the data extraction
+* Manual clip sorter to remove false positives
+* Review timestamp extraction that is sometimes a bit off
+
 # Authors
 
 * Marc Villain <marc.villain@epita.fr>

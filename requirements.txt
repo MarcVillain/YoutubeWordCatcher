@@ -2,3 +2,4 @@ youtube-dl==2020.7.28
 moviepy==1.0.3
 libdiff==0.1.1
 regex==2020.7.14
+PyYAML==5.3.1

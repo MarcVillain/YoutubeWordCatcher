@@ -1,6 +1,8 @@
 import json
 from urllib.request import urlopen
 
+from helpers import data_file
+
 
 class YoutubeAPI:
     """
@@ -36,8 +38,35 @@ class YoutubeAPI:
 
         return results
 
-    def search(self, **kwargs):
-        return self._req("search", **kwargs)
+    @data_file("Get channel ID", "channel_id")
+    def get_channel_id(self, channel_name):
+        search_results = self._req(
+            "search",
+            max_results_count=1,
+            q=channel_name,
+            part="snippet,id",
+            type="channel",
+            maxResults="1",
+        )
+        return search_results[0]["id"]["channelId"]
 
-    def captions(self, **kwargs):
-        return self._req("captions", **kwargs)
+    @data_file("Get videos list", "videos")
+    def get_videos(self, channel_id):
+        search_results = self._req(
+            "search",
+            channelId=channel_id,
+            part="snippet,id",
+            type="video",
+            order="date",
+            maxResults="50",
+        )
+
+        data = []
+        for search_item in search_results:
+            if search_item["id"]["kind"] == "youtube#video":
+                data.append(search_item)
+        data.reverse()
+
+        return data
+
+
