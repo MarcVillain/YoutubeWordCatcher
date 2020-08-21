@@ -1,5 +1,3 @@
-import sys
-
 from moviepy.video.compositing.concatenate import concatenate_videoclips
 
 import config
@@ -7,14 +5,6 @@ import config
 from logger import Logger
 from video_clip import VideoClip
 from youtube_api import YoutubeAPI
-
-if len(sys.argv) < 4:
-    print("usage: ./run.py <api_key> <channel_name> <word>")
-    exit(1)
-
-config.api_key = sys.argv[1]
-config.channel_name = sys.argv[2]
-config.word_to_extract = sys.argv[3]
 
 api = YoutubeAPI(config.api_key)
 channel_id = api.get_channel_id(config.channel_name)

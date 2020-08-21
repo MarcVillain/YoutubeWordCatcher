@@ -87,6 +87,14 @@ class VideoClip:
                 # Ensure destination folder exists
                 os.makedirs(os.path.dirname(self.cut_clip_path), exist_ok=True)
 
+                # Delete pre-existing file if there
+                # (accessing this line of code mean the file
+                # was not there in the first place)
+                try:
+                    os.remove(self.cut_clip_path)
+                except OSError:
+                    pass
+
                 # Create the cut clip
                 cut_clip = concatenate_videoclips(clips)
                 cut_clip.write_videofile(self.cut_clip_path)
@@ -99,14 +107,16 @@ class VideoClip:
 
     def __enter__(self):
         # Check if clip already exists
-
         if os.path.exists(self.cut_clip_path):
-            Logger.info("Video clip already created")
-            cut_clip_video = VideoFileClip(self.cut_clip_path)
-            return cut_clip_video
+            if not config.override_clips:
+                Logger.info("Video clip already created")
+                cut_clip_video = VideoFileClip(self.cut_clip_path)
+                return cut_clip_video
+            else:
+                Logger.info("Video clip already created (will be overridden)")
 
         # Retrieve video data or generate it
-        @data_file("Retrieve video data", self.id)
+        @data_file("Retrieve video data", self.id, config.override_clips_data)
         def _retrieve_video_data():
             data = {}
 
@@ -147,16 +157,17 @@ class VideoClip:
         if self.subtitles_fd is not None:
             self.subtitles_fd.close()
 
-        if os.path.exists(self.subtitles_path):
-            try:
-                Logger.info("Remove subtitles file")
-                os.remove(self.subtitles_path)
-            except OSError:
-                pass
+        if config.cleanup_downloads:
+            if os.path.exists(self.subtitles_path):
+                try:
+                    Logger.info("Remove subtitles file")
+                    os.remove(self.subtitles_path)
+                except OSError:
+                    pass
 
-        if os.path.exists(self.video_file_path):
-            try:
-                Logger.info("Remove video file")
-                os.remove(self.video_file_path)
-            except OSError:
-                pass
+            if os.path.exists(self.video_file_path):
+                try:
+                    Logger.info("Remove video file")
+                    os.remove(self.video_file_path)
+                except OSError:
+                    pass

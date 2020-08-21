@@ -11,3 +11,10 @@ build_dir = "/Users/Marc/Downloads/videos"
 # If True, only retrieve videos data.
 # If False, create the corresponding clip.
 data_only = False
+
+# Should we override existing clips and/or their data?
+override_clips = False
+override_clips_data = False
+
+# Should downloaded files be removed?
+cleanup_downloads = True

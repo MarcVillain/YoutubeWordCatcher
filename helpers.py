@@ -29,7 +29,7 @@ def sec_to_str(sec):
     return f"{hours}:{minutes}:{secs}.{millisecs}"
 
 
-def data_file(log_msg, filename):
+def data_file(log_msg, filename, override=False):
     def decorate(func):
         def call(*args, **kwargs):
             Logger.info(log_msg)
@@ -37,6 +37,13 @@ def data_file(log_msg, filename):
             # Pre
             filedir = os.path.join(config.build_dir, "data_save")
             filepath = os.path.join(filedir, f"{filename}.yaml")
+
+            if override:
+                try:
+                    os.remove(filepath)
+                except OSError:
+                    pass
+
             if os.path.exists(filepath):
                 with open(filepath, "r+") as file:
                     data = yaml.load(file) or None
