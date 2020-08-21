@@ -15,16 +15,16 @@ pip install -r requirements.txt
 
 In order to run properly, you need to get a Youtube API key, which you can obtain by following the instructions [here](https://developers.google.com/youtube/registering_an_application).
 
+You can edit the configuration in the `config.py` file.
+
 ```bash
-python ./run.py <api_key> <channel_name> <word>
+python ./run.py
 ```
 
 # TODO
 
-* Add option for clips without things on top
 * Multithread the data extraction
 * Manual clip sorter to remove false positives
-* Review timestamp extraction that is sometimes a bit off
 
 # Authors
 

@@ -64,22 +64,25 @@ class VideoClip:
             if video_end - video_start > config.max_clip_length:
                 video_end = video_start + config.max_clip_length
             clip_video = VideoFileClip(self.video_file_path).subclip(video_start, video_end)
-            clip_text_title = TextClip(
-                txt=f"{self.title}\nhttps://youtube.com/watch?v={self.id}\nTime: {start}",
-                fontsize=30,
-                color="black",
-                bg_color="white",
-                align="west",
-            ).set_duration(clip_video.duration).set_position(("left", "bottom"))
-            clip_text_counter = TextClip(
-                txt=f"Episode counter: {episode_word_counter}\nTotal counter  : {self.total_word_counter}",
-                fontsize=30,
-                color="black",
-                bg_color="white",
-                align="west",
-            ).set_duration(clip_video.duration).set_position(("left", "top"))
-            clip_comp = CompositeVideoClip([clip_video, clip_text_title, clip_text_counter])
-            clips.append(clip_comp)
+            if config.clips_overlay:
+                clip_text_title = TextClip(
+                    txt=f"{self.title}\nhttps://youtube.com/watch?v={self.id}\nTime: {start}",
+                    fontsize=30,
+                    color="black",
+                    bg_color="white",
+                    align="west",
+                ).set_duration(clip_video.duration).set_position(("left", "bottom"))
+                clip_text_counter = TextClip(
+                    txt=f"Episode counter: {episode_word_counter}\nTotal counter  : {self.total_word_counter}",
+                    fontsize=30,
+                    color="black",
+                    bg_color="white",
+                    align="west",
+                ).set_duration(clip_video.duration).set_position(("left", "top"))
+                clip_comp = CompositeVideoClip([clip_video, clip_text_title, clip_text_counter])
+                clips.append(clip_comp)
+            else:
+                clips.append(clip_video)
 
         if len(self.timestamps) > 0:
             Logger.info("Concatenate the cuts")

@@ -13,8 +13,12 @@ build_dir = "/Users/Marc/Downloads/videos"
 data_only = False
 
 # Should we override existing clips and/or their data?
-override_clips = False
+override_clips = True
 override_clips_data = False
 
 # Should downloaded files be removed?
 cleanup_downloads = True
+
+# Should we add video information on top of the clips?
+# (titles, word counters, ...)
+clips_overlay = True
