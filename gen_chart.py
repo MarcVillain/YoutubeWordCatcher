@@ -7,6 +7,8 @@ import config
 import matplotlib.pyplot as plt
 import yaml
 
+from helpers import str_to_sec
+
 videos_infos = {}
 videos_info_path = os.path.join(config.data_dir, "videos.yaml")
 with open(videos_info_path, "r") as f:
@@ -37,16 +39,21 @@ for filename in os.listdir(config.data_dir):
             file_data = yaml.load(f, Loader=yaml.FullLoader)
             file_data = file_data or {}
 
-            video_info = videos_infos[filename.split(".")[0]]
+            video_id = filename.split(".")[0]
+            video_info = videos_infos[video_id]
             video_date = video_info["snippet"]["publishedAt"]
             video_title = video_info["snippet"]["title"]
 
             count = len(file_data.get("timestamps", []))
+            video_time = 0  # In seconds
+            last_timestamp_time = file_data.get("time", None)
+            if last_timestamp_time is not None:
+                video_time = str_to_sec(last_timestamp_time)
 
             if filter_keep(video_title):
-                x_tags.append(video_date)
+                x_tags.append(f"{video_date} ({video_id})")
                 # Ensure all columns are visible
-                x_vals.append(count if count != 0 else 0.4)
+                x_vals.append(count / video_time if video_time != 0 else 0.0004)
 
                 found = False
                 for sentence, color in colors.items():
@@ -59,12 +66,13 @@ for filename in os.listdir(config.data_dir):
                     x_colors.append("blue")
 
 # Sort the lists
-x_tags, x_vals = zip(*sorted(zip(x_tags, x_vals)))
+x_tags, x_vals, x_colors = zip(*sorted(zip(x_tags, x_vals, x_colors)))
 
-# Remove too many tags
+# Add spacing between tags (remove to get every value)
 spacing = int(len(x_tags) / 20) or 1
+spacing = 1
 x_tags = [
-    (tag.split("T")[0] if i == 0 or i == len(x_tags) - 1 or i % spacing == 0 else None)
+    (tag if i == 0 or i == len(x_tags) - 1 or i % spacing == 0 else None)
     for i, tag in enumerate(x_tags)
 ]
 
