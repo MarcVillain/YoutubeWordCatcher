@@ -56,7 +56,7 @@ class VideoClip:
         episode_word_counter = 0
         for start, _, end in self.timestamps:
             episode_word_counter += 1
-            self.total_word_counter += 1
+            VideoClip.total_word_counter += 1
 
             video_start = str_to_sec(start) + config.start_clip_delay
             video_end = str_to_sec(end) + config.end_clip_delay
@@ -73,7 +73,7 @@ class VideoClip:
                     align="west",
                 ).set_duration(clip_video.duration).set_position(("left", "bottom"))
                 clip_text_counter = TextClip(
-                    txt=f"Episode counter: {episode_word_counter}\nTotal counter  : {self.total_word_counter}",
+                    txt=f"Episode counter: {episode_word_counter}\nTotal counter  : {VideoClip.total_word_counter}",
                     fontsize=12,
                     color="black",
                     bg_color="white",

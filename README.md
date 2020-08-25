@@ -37,6 +37,7 @@ You can look at the code to edit some variables if necessary.
 
 * Multithread the data extraction
 * Manual clip sorter to remove false positives
+* Improve timestamps with SpeechRecognition plugin
 
 # Authors
 
