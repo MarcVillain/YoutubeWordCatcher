@@ -25,10 +25,12 @@ for i, video in enumerate(videos):
     Logger.level -= 1
     Logger.pre = ""
 
-if len(cut_clips) > 0:
-    Logger.info("Concatenate all the clips")
-    final_clip_path = f"{config.build_dir}/{config.word_to_extract}_{config.channel_name}.mp4"
-    final_clip = concatenate_videoclips(cut_clips)
-    final_clip.write_videofile(final_clip_path)
-else:
-    Logger.info("No clip to concatenate")
+
+if config.generate_final_clip:
+    if len(cut_clips) > 0:
+        Logger.info("Concatenate all the clips")
+        final_clip_path = f"{config.build_dir}/{config.word_to_extract}_{config.channel_name}.mp4"
+        final_clip = concatenate_videoclips(cut_clips, method="compose")
+        final_clip.write_videofile(final_clip_path)
+    else:
+        Logger.info("No clip to concatenate")

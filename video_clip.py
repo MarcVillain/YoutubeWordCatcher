@@ -5,7 +5,7 @@ from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from moviepy.video.compositing.concatenate import concatenate_videoclips
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from regex import regex
-from youtube_dl import YoutubeDL
+from youtube_dl import YoutubeDL, DownloadError
 
 import config
 import subtitles
@@ -31,7 +31,7 @@ class VideoClip:
         self.subtitles_fd = None
         self.timestamps = None
 
-    def _download_video(self, with_subtitles=True):
+    def _download_video(self, with_subtitles=True, subtitles_only=False):
         ydl_config = {
             "outtmpl": self.video_file_path,
         }
@@ -41,14 +41,20 @@ class VideoClip:
             ydl_config["subtitleslangs"] = ["en"]
             ydl_config["writeautomaticsub"] = True
 
-        if self.subtitles_only:
+        if subtitles_only:
             ydl_config["skip_download"] = True
 
         Logger.info("Download files")
 
         video_url = f"http://youtube.com/watch?v={self.id}"
         with YoutubeDL(ydl_config) as ydl:
-            ydl.download([video_url])
+            try:
+                ydl.download([video_url])
+            except DownloadError as e:
+                Logger.error(f"Unable to download file: {e}")
+                return False
+
+        return True
 
     def _cut_and_compose(self):
         Logger.info("Cut and compose the clips")
@@ -109,11 +115,16 @@ class VideoClip:
         return None
 
     def __enter__(self):
+        if len(config.filter_video_ids) > 0 and self.id not in config.filter_video_ids:
+            return None
+
         # Check if clip already exists
         if os.path.exists(self.cut_clip_path):
             if not config.override_clips:
                 Logger.info("Video clip already created")
                 cut_clip_video = VideoFileClip(self.cut_clip_path)
+                data = data_file("Retrieve video data", self.id)(lambda: {})()
+                VideoClip.total_word_counter += len(data["timestamps"])
                 return cut_clip_video
             else:
                 Logger.info("Video clip already created (will be overridden)")
@@ -123,7 +134,8 @@ class VideoClip:
         def _retrieve_video_data():
             data = {}
 
-            self._download_video()
+            if not self._download_video(subtitles_only=True):
+                return None
 
             if os.path.exists(self.subtitles_path):
                 self.subtitles_fd = open(self.subtitles_path, "r")
@@ -149,14 +161,12 @@ class VideoClip:
         video_data = _retrieve_video_data()
         self.timestamps = video_data.get("timestamps", None)
 
-        if len(self.timestamps) > 0:
-            # Preloading subtitles causes to not download the video file
-            if self.subtitles_only is False:
-                self._download_video(with_subtitles=False)
-
-            # Create clip
-            if not self.subtitles_only:
-                return self._cut_and_compose()
+        if (
+            len(self.timestamps) > 0
+            and not self.subtitles_only
+            and self._download_video(with_subtitles=False)
+        ):
+            return self._cut_and_compose()
         else:
             Logger.info("Not creating clip because word not appearing")
 
