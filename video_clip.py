@@ -190,3 +190,10 @@ class VideoClip:
                     os.remove(self.video_file_path)
                 except OSError:
                     pass
+
+            if os.path.exists(f"{self.video_file_path}.part"):
+                try:
+                    Logger.info("Remove incomplete video file")
+                    os.remove(f"{self.video_file_path}.part")
+                except OSError:
+                    pass
