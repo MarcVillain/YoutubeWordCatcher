@@ -3,3 +3,4 @@ moviepy==1.0.3
 libdiff==0.1.1
 regex==2020.7.14
 PyYAML==5.3.1
+matplotlib==3.3.1

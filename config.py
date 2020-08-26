@@ -1,3 +1,5 @@
+from os.path import join
+
 api_key = ""
 channel_name = ""
 word_to_extract = ""
@@ -7,6 +9,7 @@ start_clip_delay = -0.25
 end_clip_delay = 0.25
 
 build_dir = "/Users/Marc/Downloads/videos"
+data_dir = join(build_dir, "data_save")
 
 # If True, only retrieve videos data.
 # If False, create the corresponding clip.

@@ -35,8 +35,7 @@ def data_file(log_msg, filename, override=False):
             Logger.info(log_msg)
 
             # Pre
-            filedir = os.path.join(config.build_dir, "data_save")
-            filepath = os.path.join(filedir, f"{filename}.yaml")
+            filepath = os.path.join(config.data_dir, f"{filename}.yaml")
 
             if override:
                 try:
@@ -52,7 +51,7 @@ def data_file(log_msg, filename, override=False):
                     Logger.info("Use saved value")
                     return data
             else:
-                os.makedirs(filedir, exist_ok=True)
+                os.makedirs(config.data_dir, exist_ok=True)
                 with open(filepath, "w"):
                     pass
 
