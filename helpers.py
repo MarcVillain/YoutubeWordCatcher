@@ -58,15 +58,13 @@ def data_file(log_msg, filename, override=False):
             # Run
             new_data = func(*args, **kwargs)
 
-            if new_data is None:
-                return data
-
             # Post
-            with open(filepath, "w+") as file:
-                file.write(yaml.dump(new_data))
+            if new_data is not None:
+                with open(filepath, "w+") as file:
+                    file.write(yaml.dump(new_data))
 
             # Return
-            return new_data
+            return new_data or {}
 
         return call
 
