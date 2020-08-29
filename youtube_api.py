@@ -1,7 +1,9 @@
+import datetime
 import json
 from urllib.request import urlopen
 
-from helpers import data_file
+from helpers import data_file, str_to_sec, sec_to_str
+from logger import Logger
 
 
 class YoutubeAPI:
@@ -19,7 +21,7 @@ class YoutubeAPI:
             url += f"&{k}={v}"
         return url
 
-    def _req(self, endpoint, max_results_count=500, **kwargs):
+    def _req(self, endpoint, max_results_count=10000, **kwargs):
         search_url = self._append_args(f"{self.api_url}/{endpoint}?", kwargs)
 
         results = []
@@ -28,13 +30,23 @@ class YoutubeAPI:
             raw_data = urlopen(url)
             data = json.load(raw_data)
 
-            results += data["items"]
+            items = data["items"]
+            results += items
 
-            if "nextPageToken" not in data:
+            if len(items) == 0:
+                Logger.info(f"No more items to retrieve")
                 break
 
-            next_page_token = data["nextPageToken"]
-            url = f"{search_url}&pageToken={next_page_token}"
+            Logger.info(f"Retrieved {len(items)} items. (total: {len(results)})")
+
+            published_at = results[-1]["snippet"]["publishedAt"]
+            # We remove one second to ensure we don't retrieve the same clip twice
+            published_at = (
+                datetime.datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%S%z")
+                + datetime.timedelta(0, -1)
+            ).strftime("%Y-%m-%dT%H:%M:%S%z").replace("+0000", "Z")
+
+            url = f"{search_url}&publishedBefore={published_at}"
 
         return results
 

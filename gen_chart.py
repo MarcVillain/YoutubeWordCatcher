@@ -53,7 +53,7 @@ for filename in os.listdir(config.data_dir):
             if filter_keep(video_title):
                 x_tags.append(f"{video_date} ({video_id})")
                 # Ensure all columns are visible
-                x_vals.append(count / video_time if video_time != 0 else 0.0004)
+                x_vals.append(count / video_time if video_time != 0 else 0)
 
                 found = False
                 for sentence, color in colors.items():
@@ -70,7 +70,6 @@ x_tags, x_vals, x_colors = zip(*sorted(zip(x_tags, x_vals, x_colors)))
 
 # Add spacing between tags (remove to get every value)
 spacing = int(len(x_tags) / 20) or 1
-spacing = 1
 x_tags = [
     (tag if i == 0 or i == len(x_tags) - 1 or i % spacing == 0 else None)
     for i, tag in enumerate(x_tags)
