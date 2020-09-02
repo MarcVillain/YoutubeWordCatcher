@@ -140,10 +140,11 @@ def _build_final_video(conf, videos):
     total = sum(1 for _ in _clip_list(videos))
 
     for counter, (video, clip, pos) in enumerate(_clip_list(videos)):
+        video_id = video["id"]["videoId"]
         pos_log = str(pos + 1)
         clips_count_log = str(len(video["data"]["clips"]))
         counter_log = str(counter + 1).rjust(len(str(total)))
-        logger.info(f"Build final clip (video: {pos_log}/{clips_count_log}) (global: {counter_log}/{total})")
+        logger.info(f"Build final clip (video {video_id}: {pos_log}/{clips_count_log}) (global: {counter_log}/{total})")
 
         video_clip = VideoFileClip(clip)
         if conf.do_text_overlay:
