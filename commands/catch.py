@@ -102,7 +102,7 @@ def _extract_video_clips(conf, video_id, video_data):
         try:
             timestamps = video_data.get("timestamps", [])
             for i, (start, _, end) in enumerate(timestamps):
-                clip_pos = str(i).rjust(len(str(timestamps)))
+                clip_pos = str(i + 1).rjust(len(str(timestamps)))
                 logger.info(f"Extract video clip ({clip_pos}/{len(timestamps)})")
 
                 # Get absolute start and end
@@ -140,9 +140,10 @@ def _build_final_video(conf, videos):
     total = sum(1 for _ in _clip_list(videos))
 
     for counter, (video, clip, pos) in enumerate(_clip_list(videos)):
-        counter_log = str(counter).rjust(len(str(total)))
+        pos_log = str(pos + 1)
         clips_count_log = str(len(video["data"]["clips"]))
-        logger.info(f"Build final clip (video: {pos}/{clips_count_log}) (global: {counter_log}/{total})")
+        counter_log = str(counter + 1).rjust(len(str(total)))
+        logger.info(f"Build final clip (video: {pos_log}/{clips_count_log}) (global: {counter_log}/{total})")
 
         video_clip = VideoFileClip(clip)
         if conf.do_text_overlay:
@@ -169,8 +170,8 @@ def run(args):
     for i in range(videos_len):
         video_id = videos[i]["id"]["videoId"]
 
-        log_pos = str(i).rjust(len(str(videos_len)))
-        logger.prefix = f"({log_pos}/{videos_len}) {video_id} >> "
+        pos_log = str(i + 1).rjust(len(str(videos_len)))
+        logger.prefix = f"({pos_log}/{videos_len}) {video_id} >> "
 
         logger.info("Retrieve video data")
         video_saved_data_path = os.path.join("videos", video_id)
