@@ -51,13 +51,17 @@ def _read_saved_data(conf, path, func, write=True):
 
     full_path = os.path.join(conf.data_folder, f"{path}.yaml")
     data = io.load_yaml(full_path)
-    if data or not write:
+    if data:
+        logger.info("Use saved value")
+        return data
+    if not write:
         return data
 
     return _write_saved_data(conf, path, func)
 
 
 def _extract_video_data(conf, video_id):
+    logger.info("Extract video data")
     # Download subtitles
     with youtube.download(video_id, conf.download_folder, video=False) as dl:
         data = {
@@ -80,6 +84,8 @@ def _extract_video_data(conf, video_id):
 
 
 def _extract_video_clips(conf, video_id, video_data):
+    logger.info("Extract video clips")
+
     # Check if there is something to extract
     if len(video_data.get("timestamps", [])) == 0:
         return []
@@ -88,13 +94,17 @@ def _extract_video_clips(conf, video_id, video_data):
     with youtube.download(video_id, conf.download_folder, subtitles=False) as dl:
         clips = []
 
-        if not dl["video_file"]["path"]:
-            logger.error("No video found")
+        if not dl["video_file"]["exists"]:
+            logger.error("No video file found")
             return clips
 
         video_clip = VideoFileClip(dl["video_file"]["path"])
         try:
-            for i, (start, _, end) in enumerate(video_data.get("timestamps", [])):
+            timestamps = video_data.get("timestamps", [])
+            for i, (start, _, end) in enumerate(timestamps):
+                clip_pos = str(i).rjust(len(str(timestamps)))
+                logger.info(f"Extract video clip ({clip_pos}/{len(timestamps)})")
+
                 # Get absolute start and end
                 video_start = str_to_sec(start) + conf.start_delay
                 video_end = str_to_sec(end) + conf.end_delay
@@ -130,11 +140,16 @@ def _build_final_video(conf, videos):
     total = sum(1 for _ in _clip_list(videos))
 
     for counter, (video, clip, pos) in enumerate(_clip_list(videos)):
+        counter_log = str(counter).rjust(len(str(total)))
+        clips_count_log = str(len(video["data"]["clips"]))
+        logger.info(f"Build final clip (video: {pos}/{clips_count_log}) (global: {counter_log}/{total})")
+
         video_clip = VideoFileClip(clip)
         if conf.do_text_overlay:
             video_clip = editor.add_info_overlay(video_clip, video, pos, counter, total)
         video_clips.append(video_clip)
 
+    logger.info(f"Concatenate all clips for final video")
     final_clip = concatenate_videoclips(video_clips, method="compose")
     final_clip_file_path = os.path.join(
         conf.output_folder, f"{conf.channel_name}_{conf.word_to_extract}_{str(uuid.uuid4())[:6]}.mp4"
@@ -145,12 +160,19 @@ def _build_final_video(conf, videos):
 def run(args):
     conf = config.read(args.config, "catch", CatchConfig)
 
+    logger.prefix = "> "
+
     channel_id = _read_saved_data(conf, "channel_id", lambda: youtube.get_channel_id(conf.api_key, conf.channel_name))
     videos = _read_saved_data(conf, "videos", lambda: youtube.get_videos(conf.api_key, channel_id))
 
-    for i in range(len(videos)):
+    videos_len = len(videos)
+    for i in range(videos_len):
         video_id = videos[i]["id"]["videoId"]
 
+        log_pos = str(i).rjust(len(str(videos_len)))
+        logger.prefix = f"({log_pos}/{videos_len}) {video_id} >> "
+
+        logger.info("Retrieve video data")
         video_saved_data_path = os.path.join("videos", video_id)
         video_data = _read_saved_data(conf, video_saved_data_path, lambda: None, write=False)
 
@@ -167,6 +189,8 @@ def run(args):
         # REMOVE ME: next two lines
         if i == 50:
             break
+
+    logger.prefix = "> "
 
     _build_final_video(conf, videos)
 

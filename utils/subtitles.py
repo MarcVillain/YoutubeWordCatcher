@@ -93,11 +93,11 @@ def _extract_timestamps(content, word_to_extract):
 
 
 def _extract_time(content):
+    logger.info("Extract time of the video")
+
     # This is an approximation of the video length based on the last timestamp
     # TODO: Find a way to get the real video length
     #       without having to download the video clip
-    logger.info("Extract time of the video")
-
     pattern = r"\d{2}:\d{2}:\d{2}.\d{3}"
     return [match for match in regex.findall(pattern, content, overlapped=True)][-1]
 

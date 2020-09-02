@@ -34,7 +34,7 @@ def _req(api_key, endpoint, max_results_count=10000, **kwargs):
             logger.info("No more items to retrieve")
             break
 
-        logger.info(f"Retrieved {len(items)} items. (total: {len(results)})")
+        logger.info(f"Retrieved {len(items)} items (total: {len(results)}) (max: {max_results_count})")
 
         published_at = results[-1]["snippet"]["publishedAt"]
         # We need to trim one second to ensure we
@@ -51,6 +51,8 @@ def _req(api_key, endpoint, max_results_count=10000, **kwargs):
 
 
 def get_channel_id(api_key, channel_name):
+    logger.info("Retrieve channel id")
+
     search_results = _req(
         api_key,
         "search",
@@ -64,6 +66,8 @@ def get_channel_id(api_key, channel_name):
 
 
 def get_videos(api_key, channel_id):
+    logger.info("Retrieve list of videos")
+
     search_results = _req(
         api_key,
         "search",
@@ -97,16 +101,20 @@ class download:
 
     def __enter__(self):
         self.video_file_path = os.path.join(self.output_path, f"{self.video_id}.mp4")
+        self.subtitles_file_path = os.path.join(self.output_path, f"{self.video_id}.en.vtt")
+
         ydl_config = {
             "outtmpl": self.video_file_path,
         }
 
         if self.subtitles:
+            logger.info("Download subtitles file")
             ydl_config["writesubtitles"] = True
             ydl_config["subtitleslangs"] = ["en"]
             ydl_config["writeautomaticsub"] = True
 
         if not self.video:
+            logger.info("Download video file")
             ydl_config["skip_download"] = True
 
         video_url = f"http://youtube.com/watch?v={self.video_id}"
@@ -115,9 +123,6 @@ class download:
                 ydl.download([video_url])
             except DownloadError as e:
                 logger.error(f"Unable to download: {e}")
-                return None, None
-
-        self.subtitles_file_path = os.path.join(self.output_path, f"{self.video_id}.en.vtt")
 
         return {
             "subtitles_file": {
