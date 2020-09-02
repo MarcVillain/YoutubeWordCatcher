@@ -1,8 +1,15 @@
 import datetime
 import json
+import os
 from urllib.request import urlopen
 
-from utils import logger, io
+from youtube_dl import YoutubeDL, DownloadError
+
+from utils import logger
+
+"""
+Youtube API
+"""
 
 api_url = "https://www.googleapis.com/youtube/v3"
 
@@ -74,3 +81,34 @@ def get_videos(api_key, channel_id):
     data.reverse()
 
     return data
+
+
+"""
+Youtube DL
+"""
+
+
+def download(video_id, output_path, subtitles=True, video=True):
+    video_file_path = os.path.join(output_path, f"{video_id}.mp4")
+    ydl_config = {
+        "outtmpl": video_file_path,
+    }
+
+    if subtitles:
+        ydl_config["writesubtitles"] = True
+        ydl_config["subtitleslangs"] = ["en"]
+        ydl_config["writeautomaticsub"] = True
+
+    if not video:
+        ydl_config["skip_download"] = True
+
+    video_url = f"http://youtube.com/watch?v={video_id}"
+    with YoutubeDL(ydl_config) as ydl:
+        try:
+            ydl.download([video_url])
+        except DownloadError as e:
+            logger.error(f"Unable to download: {e}")
+            return None, None
+
+    subtitles_file_path = os.path.join(output_path, f"{video_id}.en.vtt")
+    return subtitles_file_path, video_file_path

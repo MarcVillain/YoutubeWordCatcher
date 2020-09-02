@@ -18,13 +18,22 @@ class CatchConfig:
         self.output_folder = kwargs.get("output_folder", "")
         self.do_output_data = kwargs.get("do_output_data", True)
         self.data_folder = kwargs.get("data_folder", os.path.join(self.output_folder, "data"))
+        self.download_folder = kwargs.get("download_folder", os.path.join(self.output_folder, "download"))
 
         self.max_length = kwargs.get("max_length", 1.5)
         self.start_delay = kwargs.get("start_delay", -0.25)
         self.end_delay = kwargs.get("end_delay", 0.75)
 
 
-def get_saved_data(conf, path, func):
+def _set_saved_data(conf, path, func):
+    full_path = os.path.join(conf.data_folder, path)
+    new_data = func()
+    io.dump_yaml(full_path, new_data)
+
+    return new_data
+
+
+def _get_saved_data(conf, path, func):
     path = f"{path}.yaml"
     if not conf.do_output_data:
         return None
@@ -34,19 +43,36 @@ def get_saved_data(conf, path, func):
     if data:
         return data
 
-    new_data = func()
-    io.dump_yaml(full_path, new_data)
+    return _set_saved_data(conf, path, func)
 
-    return new_data
+
+def _extract_video_data(conf, video):
+    data = {}
+
+    # Download subtitles
+    subtitles_path, _ = youtube.download(video["id"]["videoId"], conf.download_folder, video=False)
+    if not subtitles_path:
+        return data
+
+    # Extract timestamps
+
+    # Extract time
+
+    return data
 
 
 def run(args):
     conf = config.read(args.config, "catch", CatchConfig)
-    channel_id = get_saved_data(conf, "channel_id", lambda: youtube.get_channel_id(conf.api_key, conf.channel_name))
-    videos = get_saved_data(conf, "videos", lambda: youtube.get_videos(conf.api_key, channel_id))
-    # Get channel video list
-    # Extract timestamps
-    # Extract clips
+    channel_id = _get_saved_data(conf, "channel_id", lambda: youtube.get_channel_id(conf.api_key, conf.channel_name))
+    videos = _get_saved_data(conf, "videos", lambda: youtube.get_videos(conf.api_key, channel_id))
+    for video in videos:
+        # Extract video data (time, timestamps, ...)
+        if video.get("data", None) is None:
+            video["data"] = _extract_video_data(conf, video)
+            _set_saved_data(conf, "videos", lambda: videos)
+
+        # Extract clips
+
     # Build final video
     pass
 
