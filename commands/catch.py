@@ -25,7 +25,7 @@ class CatchConfig:
         self.end_delay = kwargs.get("end_delay", 0.75)
 
 
-def _set_saved_data(conf, path, func):
+def _write_saved_data(conf, path, func):
     path = f"{path}.yaml"
     full_path = os.path.join(conf.data_folder, path)
     data = func()
@@ -33,44 +33,52 @@ def _set_saved_data(conf, path, func):
     return data
 
 
-def _get_saved_data(conf, path, func):
+def _read_saved_data(conf, path, func, write=True):
     path = f"{path}.yaml"
     if not conf.do_output_data:
         return None
 
     full_path = os.path.join(conf.data_folder, path)
     data = io.load_yaml(full_path)
-    if data:
+    if data or not write:
         return data
 
-    return _set_saved_data(conf, path, func)
+    return _write_saved_data(conf, path, func)
 
 
 def _extract_video_data(conf, video_id):
-    data = {}
-
     # Download subtitles
     with youtube.download(video_id, conf.download_folder, video=False) as (subtitles_file_path, _):
         if not subtitles_file_path:
             logger.error("No subtitles found")
-            return data
+            return {}
 
+        # Extract data
         data = subtitles.extract_data(subtitles_file_path, conf.word_to_extract)
 
-    return data
+        return {
+            "subtitles_file_path": subtitles_file_path,
+            **data,
+        }
 
 
 def run(args):
     conf = config.read(args.config, "catch", CatchConfig)
-    channel_id = _get_saved_data(conf, "channel_id", lambda: youtube.get_channel_id(conf.api_key, conf.channel_name))
-    videos = _get_saved_data(conf, "videos", lambda: youtube.get_videos(conf.api_key, channel_id))
-    for i in range(len(videos)):
-        # Extract video data (time, timestamps, ...)
-        if videos[i].get("data", None) is None:
-            videos[i]["data"] = _extract_video_data(conf, videos[i]["id"]["videoId"])
-            _set_saved_data(conf, "videos", lambda: videos)
 
-        # Extract clips
+    channel_id = _read_saved_data(conf, "channel_id", lambda: youtube.get_channel_id(conf.api_key, conf.channel_name))
+    videos = _read_saved_data(conf, "videos", lambda: youtube.get_videos(conf.api_key, channel_id))
+
+    for i in range(len(videos)):
+        video_id = videos[i]["id"]["videoId"]
+
+        video_saved_data_path = os.path.join("videos", video_id)
+        video_data = _read_saved_data(conf, video_saved_data_path, lambda: None, write=False)
+
+        if video_data is None:
+            video_data = _extract_video_data(conf, video_id)
+            _write_saved_data(conf, video_saved_data_path, video_data)
+
+            # Extract clips
 
     # Build final video
     pass
