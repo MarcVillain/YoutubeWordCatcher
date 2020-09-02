@@ -5,7 +5,7 @@ Extract clips of youtube videos where a word is pronounced
 import argparse
 import os
 
-from utils import youtube, config, io, logger
+from utils import youtube, config, io, logger, subtitles
 
 
 class CatchConfig:
@@ -26,11 +26,11 @@ class CatchConfig:
 
 
 def _set_saved_data(conf, path, func):
+    path = f"{path}.yaml"
     full_path = os.path.join(conf.data_folder, path)
-    new_data = func()
-    io.dump_yaml(full_path, new_data)
-
-    return new_data
+    data = func()
+    io.dump_yaml(full_path, data)
+    return data
 
 
 def _get_saved_data(conf, path, func):
@@ -46,18 +46,16 @@ def _get_saved_data(conf, path, func):
     return _set_saved_data(conf, path, func)
 
 
-def _extract_video_data(conf, video):
+def _extract_video_data(conf, video_id):
     data = {}
 
     # Download subtitles
-    with youtube.download(video["id"]["videoId"], conf.download_folder, video=False) as (subtitles_file_path, _):
+    with youtube.download(video_id, conf.download_folder, video=False) as (subtitles_file_path, _):
         if not subtitles_file_path:
             logger.error("No subtitles found")
             return data
 
-        # Extract timestamps
-
-        # Extract time
+        data = subtitles.extract_data(subtitles_file_path, conf.word_to_extract)
 
     return data
 
@@ -66,10 +64,10 @@ def run(args):
     conf = config.read(args.config, "catch", CatchConfig)
     channel_id = _get_saved_data(conf, "channel_id", lambda: youtube.get_channel_id(conf.api_key, conf.channel_name))
     videos = _get_saved_data(conf, "videos", lambda: youtube.get_videos(conf.api_key, channel_id))
-    for video in videos:
+    for i in range(len(videos)):
         # Extract video data (time, timestamps, ...)
-        if video.get("data", None) is None:
-            video["data"] = _extract_video_data(conf, video)
+        if videos[i].get("data", None) is None:
+            videos[i]["data"] = _extract_video_data(conf, videos[i]["id"]["videoId"])
             _set_saved_data(conf, "videos", lambda: videos)
 
         # Extract clips
