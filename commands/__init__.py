@@ -40,9 +40,7 @@ def parse():
     # Parse arguments
     args = parser.parse_args(sys.argv[1:2])
     if args.command not in commands:
-        print(
-            f"ywc: '{args.command}' is not a ywc command. See 'ywc --help'."
-        )
+        print(f"ywc: '{args.command}' is not a ywc command. See 'ywc --help'.")
         exit(1)
 
     # Set logging level

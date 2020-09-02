@@ -24,4 +24,3 @@ def error(*args, **kwargs):
 
 def debug(*args, **kwargs):
     _logger.debug(*args, **kwargs)
-
