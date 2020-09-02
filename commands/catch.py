@@ -4,28 +4,38 @@ Extract clips of youtube videos where a word is pronounced
 
 import argparse
 import os
+import uuid
 
+from moviepy.video.compositing.concatenate import concatenate_videoclips
 from moviepy.video.io.VideoFileClip import VideoFileClip
 
-from utils import youtube, config, io, logger, subtitles
+from utils import youtube, config, io, logger, subtitles, editor
 from utils.helpers import str_to_sec
 
 
 class CatchConfig:
     def __init__(self, **kwargs):
+        # General
         self.channel_name = kwargs.get("channel_name", "")
         self.word_to_extract = kwargs.get("word_to_extract", "")
 
+        # Youtube
         self.api_key = kwargs.get("api_key", "")
 
+        # Folders
         self.output_folder = kwargs.get("output_folder", "")
-        self.do_output_data = kwargs.get("do_output_data", True)
         self.data_folder = kwargs.get("data_folder", os.path.join(self.output_folder, "data"))
         self.download_folder = kwargs.get("download_folder", os.path.join(self.output_folder, "download"))
+        self.build_folder = kwargs.get("build_folder", os.path.join(self.output_folder, "build"))
 
+        # Clips settings
         self.max_length = kwargs.get("max_length", 1.5)
         self.start_delay = kwargs.get("start_delay", -0.25)
         self.end_delay = kwargs.get("end_delay", 0.75)
+
+        # Switches
+        self.do_output_data = kwargs.get("do_output_data", True)
+        self.do_text_overlay = kwargs.get("do_text_overlay", True)
 
 
 def _write_saved_data(conf, path, func):
@@ -107,6 +117,31 @@ def _extract_video_clips(conf, video_id, video_data):
         return clips
 
 
+def _clip_list(videos):
+    # REMOVE ME: [:50]
+    for video in videos[:50]:
+        if len(video["data"]["clips"]) > 0:
+            for pos, clip in enumerate(video["data"]["clips"]):
+                yield video, clip, pos
+
+
+def _build_final_video(conf, videos):
+    video_clips = []
+    total = sum(1 for _ in _clip_list(videos))
+
+    for counter, (video, clip, pos) in enumerate(_clip_list(videos)):
+        video_clip = VideoFileClip(clip)
+        if conf.do_text_overlay:
+            video_clip = editor.add_info_overlay(video_clip, video, pos, counter, total)
+        video_clips.append(video_clip)
+
+    final_clip = concatenate_videoclips(video_clips, method="compose")
+    final_clip_file_path = os.path.join(
+        conf.output_folder, f"{conf.channel_name}_{conf.word_to_extract}_{str(uuid.uuid4())[:6]}.mp4"
+    )
+    final_clip.write_videofile(final_clip_file_path)
+
+
 def run(args):
     conf = config.read(args.config, "catch", CatchConfig)
 
@@ -127,8 +162,13 @@ def run(args):
             video_data["clips"] = _extract_video_clips(conf, video_id, video_data)
             _write_saved_data(conf, video_saved_data_path, lambda: video_data)
 
-    # Build final video
-    pass
+        videos[i]["data"] = video_data
+
+        # REMOVE ME: next two lines
+        if i == 50:
+            break
+
+    _build_final_video(conf, videos)
 
 
 def parse(prog, args):
