@@ -5,7 +5,10 @@ Extract clips of youtube videos where a word is pronounced
 import argparse
 import os
 
+from moviepy.video.io.VideoFileClip import VideoFileClip
+
 from utils import youtube, config, io, logger, subtitles
+from utils.helpers import str_to_sec
 
 
 class CatchConfig:
@@ -26,19 +29,17 @@ class CatchConfig:
 
 
 def _write_saved_data(conf, path, func):
-    path = f"{path}.yaml"
-    full_path = os.path.join(conf.data_folder, path)
+    full_path = os.path.join(conf.data_folder, f"{path}.yaml")
     data = func()
     io.dump_yaml(full_path, data)
     return data
 
 
 def _read_saved_data(conf, path, func, write=True):
-    path = f"{path}.yaml"
     if not conf.do_output_data:
         return None
 
-    full_path = os.path.join(conf.data_folder, path)
+    full_path = os.path.join(conf.data_folder, f"{path}.yaml")
     data = io.load_yaml(full_path)
     if data or not write:
         return data
@@ -48,18 +49,62 @@ def _read_saved_data(conf, path, func, write=True):
 
 def _extract_video_data(conf, video_id):
     # Download subtitles
-    with youtube.download(video_id, conf.download_folder, video=False) as (subtitles_file_path, _):
-        if not subtitles_file_path:
+    with youtube.download(video_id, conf.download_folder, video=False) as dl:
+        data = {
+            "id": video_id,
+            "subtitles_file": dl["subtitles_file"],
+            "video_file": dl["video_file"],
+        }
+
+        if not dl["subtitles_file"]["exists"]:
             logger.error("No subtitles found")
-            return {}
+            return data
 
         # Extract data
-        data = subtitles.extract_data(subtitles_file_path, conf.word_to_extract)
+        subtitles_data = subtitles.extract_data(dl["subtitles_file"]["path"], conf.word_to_extract)
 
         return {
-            "subtitles_file_path": subtitles_file_path,
             **data,
+            **subtitles_data,
         }
+
+
+def _extract_video_clips(conf, video_id, video_data):
+    # Check if there is something to extract
+    if len(video_data.get("timestamps", [])) == 0:
+        return []
+
+    # Download video
+    with youtube.download(video_id, conf.download_folder, subtitles=False) as dl:
+        clips = []
+
+        if not dl["video_file"]["path"]:
+            logger.error("No video found")
+            return clips
+
+        video_clip = VideoFileClip(dl["video_file"]["path"])
+        try:
+            for i, (start, _, end) in enumerate(video_data.get("timestamps", [])):
+                # Get absolute start and end
+                video_start = str_to_sec(start) + conf.start_delay
+                video_end = str_to_sec(end) + conf.end_delay
+                # Prevent clip from being too long
+                if video_end - video_start > conf.max_length:
+                    video_end = video_start + conf.max_length
+                # Extract clip
+                subclip = video_clip.subclip(video_start, video_end)
+
+                # Create destination
+                subclip_file_path = os.path.join(conf.output_folder, "clips", video_id, f"{i}.mp4")
+                os.makedirs(os.path.dirname(subclip_file_path), exist_ok=True)
+
+                # Save clip
+                subclip.write_videofile(subclip_file_path)
+                clips.append(subclip_file_path)
+        finally:
+            video_clip.close()
+
+        return clips
 
 
 def run(args):
@@ -76,9 +121,11 @@ def run(args):
 
         if video_data is None:
             video_data = _extract_video_data(conf, video_id)
-            _write_saved_data(conf, video_saved_data_path, video_data)
+            _write_saved_data(conf, video_saved_data_path, lambda: video_data)
 
-            # Extract clips
+        if video_data.get("clips", None) is None:
+            video_data["clips"] = _extract_video_clips(conf, video_id, video_data)
+            _write_saved_data(conf, video_saved_data_path, lambda: video_data)
 
     # Build final video
     pass

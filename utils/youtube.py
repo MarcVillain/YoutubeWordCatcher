@@ -119,15 +119,16 @@ class download:
 
         self.subtitles_file_path = os.path.join(self.output_path, f"{self.video_id}.en.vtt")
 
-        # Ensure the files where downloaded
-        video_file_path = None
-        subtitles_file_path = None
-        if os.path.exists(self.video_file_path):
-            video_file_path = self.video_file_path
-        if os.path.exists(self.subtitles_file_path):
-            subtitles_file_path = self.subtitles_file_path
-
-        return subtitles_file_path, video_file_path
+        return {
+            "subtitles_file": {
+                "path": self.subtitles_file_path,
+                "exists": os.path.exists(self.subtitles_file_path),
+            },
+            "video_file": {
+                "path": self.video_file_path,
+                "exists": os.path.exists(self.video_file_path),
+            },
+        }
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if os.path.exists(self.subtitles_file_path):
