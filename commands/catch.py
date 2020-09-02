@@ -43,6 +43,7 @@ def get_saved_data(conf, path, func):
 def run(args):
     conf = config.read(args.config, "catch", CatchConfig)
     channel_id = get_saved_data(conf, "channel_id", lambda: youtube.get_channel_id(conf.api_key, conf.channel_name))
+    videos = get_saved_data(conf, "videos", lambda: youtube.get_videos(conf.api_key, channel_id))
     # Get channel video list
     # Extract timestamps
     # Extract clips

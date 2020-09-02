@@ -54,3 +54,23 @@ def get_channel_id(api_key, channel_name):
         maxResults="1",
     )
     return search_results[0]["id"]["channelId"]
+
+
+def get_videos(api_key, channel_id):
+    search_results = _req(
+        api_key,
+        "search",
+        channelId=channel_id,
+        part="snippet,id",
+        type="video",
+        order="date",
+        maxResults="50",
+    )
+
+    data = []
+    for search_item in search_results:
+        if search_item["id"]["kind"] == "youtube#video":
+            data.append(search_item)
+    data.reverse()
+
+    return data
