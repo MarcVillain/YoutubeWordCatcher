@@ -88,27 +88,56 @@ Youtube DL
 """
 
 
-def download(video_id, output_path, subtitles=True, video=True):
-    video_file_path = os.path.join(output_path, f"{video_id}.mp4")
-    ydl_config = {
-        "outtmpl": video_file_path,
-    }
+class download:
+    def __init__(self, video_id, output_path, subtitles=True, video=True):
+        self.video_id = video_id
+        self.output_path = output_path
+        self.subtitles = subtitles
+        self.video = video
 
-    if subtitles:
-        ydl_config["writesubtitles"] = True
-        ydl_config["subtitleslangs"] = ["en"]
-        ydl_config["writeautomaticsub"] = True
+    def __enter__(self):
+        self.video_file_path = os.path.join(self.output_path, f"{self.video_id}.mp4")
+        ydl_config = {
+            "outtmpl": self.video_file_path,
+        }
 
-    if not video:
-        ydl_config["skip_download"] = True
+        if self.subtitles:
+            ydl_config["writesubtitles"] = True
+            ydl_config["subtitleslangs"] = ["en"]
+            ydl_config["writeautomaticsub"] = True
 
-    video_url = f"http://youtube.com/watch?v={video_id}"
-    with YoutubeDL(ydl_config) as ydl:
-        try:
-            ydl.download([video_url])
-        except DownloadError as e:
-            logger.error(f"Unable to download: {e}")
-            return None, None
+        if not self.video:
+            ydl_config["skip_download"] = True
 
-    subtitles_file_path = os.path.join(output_path, f"{video_id}.en.vtt")
-    return subtitles_file_path, video_file_path
+        video_url = f"http://youtube.com/watch?v={self.video_id}"
+        with YoutubeDL(ydl_config) as ydl:
+            try:
+                ydl.download([video_url])
+            except DownloadError as e:
+                logger.error(f"Unable to download: {e}")
+                return None, None
+
+        self.subtitles_file_path = os.path.join(self.output_path, f"{self.video_id}.en.vtt")
+        return self.subtitles_file_path, self.video_file_path
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if os.path.exists(self.subtitles_file_path):
+            try:
+                logger.info("Remove subtitles file")
+                os.remove(self.subtitles_file_path)
+            except OSError:
+                pass
+
+        if os.path.exists(self.video_file_path):
+            try:
+                logger.info("Remove video file")
+                os.remove(self.video_file_path)
+            except OSError:
+                pass
+
+        if os.path.exists(f"{self.video_file_path}.part"):
+            try:
+                logger.info("Remove incomplete video file")
+                os.remove(f"{self.video_file_path}.part")
+            except OSError:
+                pass

@@ -5,7 +5,7 @@ Extract clips of youtube videos where a word is pronounced
 import argparse
 import os
 
-from utils import youtube, config, io
+from utils import youtube, config, io, logger
 
 
 class CatchConfig:
@@ -50,13 +50,14 @@ def _extract_video_data(conf, video):
     data = {}
 
     # Download subtitles
-    subtitles_path, _ = youtube.download(video["id"]["videoId"], conf.download_folder, video=False)
-    if not subtitles_path:
-        return data
+    with youtube.download(video["id"]["videoId"], conf.download_folder, video=False) as (subtitles_file_path, _):
+        if not subtitles_file_path:
+            logger.error("No subtitles found")
+            return data
 
-    # Extract timestamps
+        # Extract timestamps
 
-    # Extract time
+        # Extract time
 
     return data
 
