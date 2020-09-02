@@ -1,5 +1,6 @@
 # Custom
 .idea/
+config.ini
 
 # Temporary
 backup/

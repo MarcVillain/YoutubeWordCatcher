@@ -11,8 +11,8 @@ def run(args):
     pass
 
 
-def parse(args):
-    parser = argparse.ArgumentParser(description=__doc__)
+def parse(prog, args):
+    parser = argparse.ArgumentParser(prog=prog, description=__doc__)
     parser.add_argument(
         "-t",
         "--type",
