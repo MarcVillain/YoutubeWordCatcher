@@ -138,20 +138,21 @@ class VideoClip:
                 return None
 
             if os.path.exists(self.subtitles_path):
-                self.subtitles_fd = open(self.subtitles_path, "r")
+                with open(self.subtitles_path, "r") as sub_fd:
+                    self.subtitles_fd = sub_fd
 
-                Logger.info(f"Extract timestamps where the word {self.word_to_extract} is pronounced")
-                content = subtitles.clean_vtt(self.subtitles_fd)
+                    Logger.info(f"Extract timestamps where the word {self.word_to_extract} is pronounced")
+                    content = subtitles.clean_vtt(self.subtitles_fd)
 
-                pattern = r"<(\d{2}:\d{2}:\d{2}.\d{3})>([^<]+)<(\d{2}:\d{2}:\d{2}.\d{3})>"
-                data["timestamps"] = [match for match in regex.findall(pattern, content, overlapped=True) if
-                                      self.word_to_extract in match[1]]
+                    pattern = r"<(\d{2}:\d{2}:\d{2}.\d{3})>([^<]+)<(\d{2}:\d{2}:\d{2}.\d{3})>"
+                    data["timestamps"] = [match for match in regex.findall(pattern, content, overlapped=True) if
+                                          self.word_to_extract in match[1]]
 
-                # This is an approximation of the video length based on the last timestamp
-                # TODO: Find a way to get the real video length
-                #       without having to download the video clip
-                pattern = r"\d{2}:\d{2}:\d{2}.\d{3}"
-                data["time"] = [match for match in regex.findall(pattern, content, overlapped=True)][-1]
+                    # This is an approximation of the video length based on the last timestamp
+                    # TODO: Find a way to get the real video length
+                    #       without having to download the video clip
+                    pattern = r"\d{2}:\d{2}:\d{2}.\d{3}"
+                    data["time"] = [match for match in regex.findall(pattern, content, overlapped=True)][-1]
             else:
                 data["timestamps"] = []
                 Logger.info("No subtitles for video")
