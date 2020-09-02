@@ -18,4 +18,5 @@ def parse(args):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("channel", help="name of the channel")
     parser.add_argument("word", help="word to extract")
+    parser.add_argument("api_key", help="youtube api key")
     return parser.parse_args(args)
