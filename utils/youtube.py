@@ -93,11 +93,12 @@ Youtube DL
 
 
 class download:
-    def __init__(self, video_id, output_path, subtitles=True, video=True):
+    def __init__(self, video_id, output_path, subtitles=True, video=True, cleanup=True):
         self.video_id = video_id
         self.output_path = output_path
         self.subtitles = subtitles
         self.video = video
+        self.cleanup = cleanup
 
     def __enter__(self):
         self.video_file_path = os.path.join(self.output_path, f"{self.video_id}.mp4")
@@ -136,23 +137,24 @@ class download:
         }
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if os.path.exists(self.subtitles_file_path):
-            try:
-                logger.info("Remove subtitles file")
-                os.remove(self.subtitles_file_path)
-            except OSError:
-                pass
+        if self.cleanup:
+            if os.path.exists(self.subtitles_file_path):
+                try:
+                    logger.info("Remove subtitles file")
+                    os.remove(self.subtitles_file_path)
+                except OSError:
+                    pass
 
-        if os.path.exists(self.video_file_path):
-            try:
-                logger.info("Remove video file")
-                os.remove(self.video_file_path)
-            except OSError:
-                pass
+            if os.path.exists(self.video_file_path):
+                try:
+                    logger.info("Remove video file")
+                    os.remove(self.video_file_path)
+                except OSError:
+                    pass
 
-        if os.path.exists(f"{self.video_file_path}.part"):
-            try:
-                logger.info("Remove incomplete video file")
-                os.remove(f"{self.video_file_path}.part")
-            except OSError:
-                pass
+            if os.path.exists(f"{self.video_file_path}.part"):
+                try:
+                    logger.info("Remove incomplete video file")
+                    os.remove(f"{self.video_file_path}.part")
+                except OSError:
+                    pass

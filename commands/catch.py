@@ -15,27 +15,76 @@ from utils.helpers import str_to_sec
 
 class CatchConfig:
     def __init__(self, **kwargs):
-        # General
+        """
+        Initialize the configuration.
+        :param kwargs: dictionary of key value to set
+        """
+
+        """
+        General
+        """
+        # Name of the channel to extract the videos from
         self.channel_name = kwargs.get("channel_name", "")
+        # Word to extract from the channel videos
         self.word_to_extract = kwargs.get("word_to_extract", "")
 
-        # Youtube
+        """
+        Youtube
+        """
+        # Your Youtube API key (https://developers.google.com/youtube/registering_an_application)
         self.api_key = kwargs.get("api_key", "")
 
-        # Folders
+        """
+        Folders
+        """
+        # The folder where everything will be extracted
         self.output_folder = kwargs.get("output_folder", "")
+        # The sub-folder used for persistent data storage (timestamps, lists, ...)
         self.data_folder = kwargs.get("data_folder", os.path.join(self.output_folder, "data"))
+        # The sub-folder used for downloading files
         self.download_folder = kwargs.get("download_folder", os.path.join(self.output_folder, "download"))
+        # The sub-folder used for the final video build
         self.build_folder = kwargs.get("build_folder", os.path.join(self.output_folder, "build"))
 
-        # Clips settings
+        """
+        Clips settings
+        """
+        # Maximum length of a clip (in seconds)
         self.max_length = kwargs.get("max_length", 1.5)
-        self.start_delay = kwargs.get("start_delay", -0.25)
-        self.end_delay = kwargs.get("end_delay", 0.75)
+        # Shift of the start timestamp of a clip (in seconds)
+        self.start_shift = kwargs.get("start_shift", -0.25)
+        # Shift of the end timestamp of a clip (in seconds)
+        self.end_shift = kwargs.get("end_shift", 0.75)
 
-        # Switches
+        """
+        Switches
+        """
+        # Should the program data be outputted?
         self.do_output_data = kwargs.get("do_output_data", True)
+        # Should the text overlay be applied?
         self.do_text_overlay = kwargs.get("do_text_overlay", True)
+        # Should the downloaded files be deleted?
+        self.do_cleanup_downloads = kwargs.get("do_cleanup_downloads", True)
+        # Should the video datas be computed even if they already exists?
+        self.do_override_video_data = kwargs.get("do_override_video_data", False)
+        # Should the clips be generated even if they already exists?
+        self.do_override_clips = kwargs.get("do_override_clips", False)
+        # Should the clips be generated?
+        self.do_generate_clips = kwargs.get("do_generate_clips", True)
+        # Should the final video be generated?
+        self.do_generate_final_video = kwargs.get("do_generate_final_video", True)
+
+        """
+        Filters
+        """
+        # Only work with these video ids
+        self.filter_videos_ids = kwargs.get("filter_videos_ids", [])
+
+        """
+        Thresholds
+        """
+        # Maximum amount of videos to download, cut and compose
+        self.max_videos_amount = kwargs.get("max_videos_amount", 100000)
 
 
 def _write_saved_data(conf, path, func):
@@ -63,7 +112,7 @@ def _read_saved_data(conf, path, func, write=True):
 def _extract_video_data(conf, video_id):
     logger.info("Extract video data")
     # Download subtitles
-    with youtube.download(video_id, conf.download_folder, video=False) as dl:
+    with youtube.download(video_id, conf.download_folder, video=False, cleanup=conf.do_cleanup_downloads) as dl:
         data = {
             "id": video_id,
             "subtitles_file": dl["subtitles_file"],
@@ -91,7 +140,7 @@ def _extract_video_clips(conf, video_id, video_data):
         return []
 
     # Download video
-    with youtube.download(video_id, conf.download_folder, subtitles=False) as dl:
+    with youtube.download(video_id, conf.download_folder, subtitles=False, cleanup=conf.do_cleanup_downloads) as dl:
         clips = []
 
         if not dl["video_file"]["exists"]:
@@ -106,8 +155,8 @@ def _extract_video_clips(conf, video_id, video_data):
                 logger.info(f"Extract video clip ({clip_pos}/{len(timestamps)})")
 
                 # Get absolute start and end
-                video_start = str_to_sec(start) + conf.start_delay
-                video_end = str_to_sec(end) + conf.end_delay
+                video_start = str_to_sec(start) + conf.start_shift
+                video_end = str_to_sec(end) + conf.end_shift
                 # Prevent clip from being too long
                 if video_end - video_start > conf.max_length:
                     video_end = video_start + conf.max_length
@@ -127,9 +176,13 @@ def _extract_video_clips(conf, video_id, video_data):
         return clips
 
 
-def _clip_list(videos):
-    # REMOVE ME: [:50]
-    for video in videos[:50]:
+def _clip_list(conf, videos):
+    max_videos_amount = min(conf.max_videos_amount, len(videos))
+    for video in videos[:max_videos_amount]:
+        video_id = video["id"]["videoId"]
+        if len(conf.filter_video_ids) > 0 and (video_id not in conf.filter_video_ids):
+            continue
+
         if len(video["data"]["clips"]) > 0:
             for pos, clip in enumerate(video["data"]["clips"]):
                 yield video, clip, pos
@@ -167,34 +220,36 @@ def run(args):
     channel_id = _read_saved_data(conf, "channel_id", lambda: youtube.get_channel_id(conf.api_key, conf.channel_name))
     videos = _read_saved_data(conf, "videos", lambda: youtube.get_videos(conf.api_key, channel_id))
 
-    videos_len = len(videos)
+    pos = 1
+    videos_len = min(conf.max_videos_amount, len(videos))
     for i in range(videos_len):
         video_id = videos[i]["id"]["videoId"]
 
-        pos_log = str(i + 1).rjust(len(str(videos_len)))
+        if len(conf.filter_video_ids) > 0 and (video_id not in conf.filter_video_ids):
+            continue
+
+        pos_log = str(pos + 1).rjust(len(str(videos_len)))
         logger.prefix = f"({pos_log}/{videos_len}) {video_id} >> "
 
         logger.info("Retrieve video data")
         video_saved_data_path = os.path.join("videos", video_id)
         video_data = _read_saved_data(conf, video_saved_data_path, lambda: None, write=False)
 
-        if video_data is None:
+        if conf.do_override_video_data or video_data is None:
             video_data = _extract_video_data(conf, video_id)
             _write_saved_data(conf, video_saved_data_path, lambda: video_data)
 
-        if video_data.get("clips", None) is None:
+        if conf.do_generate_clips and (conf.do_override_clips or video_data.get("clips", None) is None):
             video_data["clips"] = _extract_video_clips(conf, video_id, video_data)
             _write_saved_data(conf, video_saved_data_path, lambda: video_data)
 
         videos[i]["data"] = video_data
-
-        # REMOVE ME: next two lines
-        if i == 50:
-            break
+        pos += 1
 
     logger.prefix = "> "
 
-    _build_final_video(conf, videos)
+    if conf.do_generate_final_video:
+        _build_final_video(conf, videos)
 
 
 def parse(prog, args):
