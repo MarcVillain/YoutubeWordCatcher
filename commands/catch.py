@@ -13,7 +13,7 @@ from utils import youtube, config, io, logger, subtitles, editor
 from utils.helpers import str_to_sec
 
 
-class CatchConfig:
+class Config:
     def __init__(self, **kwargs):
         """
         Initialize the configuration.
@@ -90,14 +90,15 @@ class CatchConfig:
 def _write_saved_data(conf, path, func):
     full_path = os.path.join(conf.data_folder, f"{path}.yaml")
     data = func()
+
+    if not conf.do_output_data:
+        return data
+
     io.dump_yaml(full_path, data)
     return data
 
 
-def _read_saved_data(conf, path, func, write=True):
-    if not conf.do_output_data:
-        return None
-
+def read_saved_data(conf, path, func, write=True):
     full_path = os.path.join(conf.data_folder, f"{path}.yaml")
     data = io.load_yaml(full_path)
     if data:
@@ -213,12 +214,12 @@ def _build_final_video(conf, videos):
 
 
 def run(args):
-    conf = config.read(args.config, "catch", CatchConfig)
+    conf = config.read(args.config, "catch", Config)
 
     logger.prefix = "> "
 
-    channel_id = _read_saved_data(conf, "channel_id", lambda: youtube.get_channel_id(conf.api_key, conf.channel_name))
-    videos = _read_saved_data(conf, "videos", lambda: youtube.get_videos(conf.api_key, channel_id))
+    channel_id = read_saved_data(conf, "channel_id", lambda: youtube.get_channel_id(conf.api_key, conf.channel_name))
+    videos = read_saved_data(conf, "videos", lambda: youtube.get_videos(conf.api_key, channel_id))
 
     pos = 1
     videos_len = min(conf.max_videos_amount, len(videos))
@@ -233,7 +234,7 @@ def run(args):
 
         logger.info("Retrieve video data")
         video_saved_data_path = os.path.join("videos", video_id)
-        video_data = _read_saved_data(conf, video_saved_data_path, lambda: None, write=False)
+        video_data = read_saved_data(conf, video_saved_data_path, lambda: None, write=False)
 
         if conf.do_override_video_data or video_data is None:
             video_data = _extract_video_data(conf, video_id)

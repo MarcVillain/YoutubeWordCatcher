@@ -19,7 +19,26 @@ The available sections are:
 * **all** : will be loaded in every configuration
 * **command** : will be loaded only for the specified command (example: catch)
 
-You can find all the possible values for the configuration in the `__init__()` method of the `ConfigX` classes located at the top of the commands files, which is in the `commands` folder.
+You can find all the possible values for the configuration in the `__init__()` method of the `Config` classes located at the top of the commands files, which is in the `commands` folder.
+
+Note that whenever there are dictionaries or lists, you can represent the data on a multiline but beware of the indentation.
+
+Example:
+```ini
+[section]
+key=value
+
+list=["a", "b"]
+list=[
+     "a",
+     "b",
+     ]
+
+dict={"k": "v"}
+dict={
+     "k": "v",
+     }
+```
 
 # Run
 

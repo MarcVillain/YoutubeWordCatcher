@@ -13,11 +13,12 @@ def parse():
     commands = {}
     for module_name in module_names:
         module = importlib.import_module(f"commands.{module_name}")
-        commands[module_name] = {
-            "description": module.__doc__.strip().lower(),
-            "func_parse": module.__getattribute__("parse"),
-            "func_run": module.__getattribute__("run"),
-        }
+        if module.__doc__ is not None:
+            commands[module_name] = {
+                "description": module.__doc__.strip().lower(),
+                "func_parse": module.__getattribute__("parse"),
+                "func_run": module.__getattribute__("run"),
+            }
 
     # Build usage string
     usage = "ywc [-h] [-v] <command> [options]\n\navailable commands:"
