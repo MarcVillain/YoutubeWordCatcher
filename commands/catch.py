@@ -209,6 +209,10 @@ def _build_final_video(conf, videos):
             video_clip = editor.add_info_overlay(video_clip, video, pos, counter, total)
         video_clips.append(video_clip)
 
+    if len(video_clips) == 0:
+        logger.info(f"No clips to concatenate for final video")
+        return
+
     logger.info(f"Concatenate all clips for final video")
     final_clip = concatenate_videoclips(video_clips, method="compose")
     final_clip_file_path = os.path.join(
@@ -231,14 +235,15 @@ def run(args):
 
     pos = 1
     videos_len = min(conf.max_videos_amount, len(videos))
+    videos_len_log = videos_len if len(conf.filter_videos_ids) == 0 else len(conf.filter_videos_ids)
     for i in range(videos_len):
         video_id = videos[i]["id"]["videoId"]
 
         if len(conf.filter_videos_ids) > 0 and (video_id not in conf.filter_videos_ids):
             continue
 
-        pos_log = str(pos + 1).rjust(len(str(videos_len)))
-        logger.prefix = f"({pos_log}/{videos_len}) {video_id} >> "
+        pos_log = str(pos).rjust(len(str(videos_len_log)))
+        logger.prefix = f"({pos_log}/{videos_len_log}) {video_id} >> "
 
         logger.info("Retrieve video data")
         video_saved_data_path = os.path.join("videos", video_id)
@@ -251,6 +256,12 @@ def run(args):
         if conf.do_generate_clips and (conf.do_override_clips or video_data.get("clips", None) is None):
             video_data["clips"] = _extract_video_clips(conf, video_id, video_data)
             _write_saved_data(conf, video_saved_data_path, lambda: video_data)
+
+        clips_len = len(video_data["clips"])
+        if clips_len == 0:
+            logger.info("No clips to load")
+        else:
+            logger.info(f"Loaded {clips_len} clips")
 
         videos[i]["data"] = video_data
         pos += 1
