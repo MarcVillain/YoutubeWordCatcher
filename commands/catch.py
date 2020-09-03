@@ -10,7 +10,7 @@ from moviepy.video.compositing.concatenate import concatenate_videoclips
 from moviepy.video.io.VideoFileClip import VideoFileClip
 
 from utils import youtube, config, io, logger, subtitles, editor
-from utils.helpers import str_to_sec
+from utils.convert import str_to_sec
 
 
 class Config:
