@@ -138,6 +138,7 @@ def _extract_video_clips(conf, video_id, video_data):
 
     # Check if there is something to extract
     if len(video_data.get("timestamps", [])) == 0:
+        logger.info("No timestamps to extract")
         return []
 
     # Download video
@@ -152,7 +153,7 @@ def _extract_video_clips(conf, video_id, video_data):
         try:
             timestamps = video_data.get("timestamps", [])
             for i, (start, _, end) in enumerate(timestamps):
-                clip_pos = str(i + 1).rjust(len(str(timestamps)))
+                clip_pos = str(i + 1).rjust(len(str(len(timestamps))))
                 logger.info(f"Extract video clip ({clip_pos}/{len(timestamps)})")
 
                 # Get absolute start and end
