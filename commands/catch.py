@@ -104,7 +104,7 @@ def read_saved_data(conf, path, func, write=True, update=False):
     full_path = os.path.join(conf.data_folder, f"{path}.yaml")
 
     if not update and os.path.exists(full_path):
-        logger.info("Use saved value")
+        logger.info("Load saved value")
         return io.load_yaml(full_path)
 
     if not write:
