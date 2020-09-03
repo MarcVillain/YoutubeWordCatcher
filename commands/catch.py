@@ -73,6 +73,8 @@ class Config:
         self.do_generate_clips = kwargs.get("do_generate_clips", True)
         # Should the final video be generated?
         self.do_generate_final_video = kwargs.get("do_generate_final_video", True)
+        # Should the videos list data be updated?
+        self.do_update_video_data = kwargs.get("do_update_video_data", False)
 
         """
         Filters
@@ -98,10 +100,10 @@ def _write_saved_data(conf, path, func):
     return data
 
 
-def read_saved_data(conf, path, func, write=True):
+def read_saved_data(conf, path, func, write=True, update=True):
     full_path = os.path.join(conf.data_folder, f"{path}.yaml")
 
-    if os.path.exists(full_path):
+    if not update and os.path.exists(full_path):
         logger.info("Use saved value")
         return io.load_yaml(full_path)
 
@@ -223,7 +225,9 @@ def run(args):
     logger.info("Retrieve channel id")
     channel_id = read_saved_data(conf, "channel_id", lambda: youtube.get_channel_id(conf.api_key, conf.channel_name))
     logger.info("Retrieve list of videos")
-    videos = read_saved_data(conf, "videos", lambda: youtube.get_videos(conf.api_key, channel_id))
+    videos = read_saved_data(
+        conf, "videos", lambda: youtube.get_videos(conf.api_key, channel_id), update=conf.do_update_video_data
+    )
 
     pos = 1
     videos_len = min(conf.max_videos_amount, len(videos))
