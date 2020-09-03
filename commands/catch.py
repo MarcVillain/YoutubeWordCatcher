@@ -191,9 +191,9 @@ def _clip_list(conf, videos):
 
 def _build_final_video(conf, videos):
     video_clips = []
-    total = sum(1 for _ in _clip_list(videos))
+    total = sum(1 for _ in _clip_list(conf, videos))
 
-    for counter, (video, clip, pos) in enumerate(_clip_list(videos)):
+    for counter, (video, clip, pos) in enumerate(_clip_list(conf, videos)):
         video_id = video["id"]["videoId"]
         pos_log = str(pos + 1)
         clips_count_log = str(len(video["data"]["clips"]))
