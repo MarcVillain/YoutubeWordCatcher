@@ -43,6 +43,7 @@ def parse():
     for i, arg in enumerate(sys.argv[1:]):
         if arg[0] != "-":
             first_not_option_arg_pos = i + 2
+            break
 
     args = parser.parse_args(sys.argv[1:first_not_option_arg_pos])
     if args.command not in commands:
