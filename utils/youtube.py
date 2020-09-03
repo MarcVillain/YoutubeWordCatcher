@@ -110,8 +110,9 @@ class download:
             ydl_config["subtitleslangs"] = ["en"]
             ydl_config["writeautomaticsub"] = True
 
-        if not self.video:
+        if self.video:
             logger.info("Download video file")
+        else:
             ydl_config["skip_download"] = True
 
         video_url = f"http://youtube.com/watch?v={self.video_id}"
