@@ -100,12 +100,13 @@ def _write_saved_data(conf, path, func):
 
 def read_saved_data(conf, path, func, write=True):
     full_path = os.path.join(conf.data_folder, f"{path}.yaml")
-    data = io.load_yaml(full_path)
-    if data:
+
+    if os.path.exists(full_path):
         logger.info("Use saved value")
-        return data
+        return io.load_yaml(full_path)
+
     if not write:
-        return data
+        return func()
 
     return _write_saved_data(conf, path, func)
 
