@@ -100,7 +100,7 @@ def _write_saved_data(conf, path, func):
     return data
 
 
-def read_saved_data(conf, path, func, write=True, update=True):
+def read_saved_data(conf, path, func, write=True, update=False):
     full_path = os.path.join(conf.data_folder, f"{path}.yaml")
 
     if not update and os.path.exists(full_path):
@@ -185,7 +185,7 @@ def _clip_list(conf, videos):
     max_videos_amount = min(conf.max_videos_amount, len(videos))
     for video in videos[:max_videos_amount]:
         video_id = video["id"]["videoId"]
-        if len(conf.filter_video_ids) > 0 and (video_id not in conf.filter_video_ids):
+        if len(conf.filter_videos_ids) > 0 and (video_id not in conf.filter_videos_ids):
             continue
 
         if len(video["data"]["clips"]) > 0:
