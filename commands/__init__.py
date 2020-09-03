@@ -39,7 +39,11 @@ def parse():
     parser.add_argument("command", help="command to run")
 
     # Parse arguments
-    first_not_option_arg_pos = next(i for i, arg in enumerate(sys.argv[1:]) if arg[0] != "-") + 2
+    first_not_option_arg_pos = len(sys.argv)
+    for i, arg in enumerate(sys.argv[1:]):
+        if arg[0] != "-":
+            first_not_option_arg_pos = i + 2
+
     args = parser.parse_args(sys.argv[1:first_not_option_arg_pos])
     if args.command not in commands:
         print(f"ywc: '{args.command}' is not a ywc command. See 'ywc --help'.")

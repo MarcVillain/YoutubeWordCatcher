@@ -51,8 +51,6 @@ def _req(api_key, endpoint, max_results_count=10000, **kwargs):
 
 
 def get_channel_id(api_key, channel_name):
-    logger.info("Retrieve channel id")
-
     search_results = _req(
         api_key,
         "search",
@@ -66,8 +64,6 @@ def get_channel_id(api_key, channel_name):
 
 
 def get_videos(api_key, channel_id):
-    logger.info("Retrieve list of videos")
-
     search_results = _req(
         api_key,
         "search",

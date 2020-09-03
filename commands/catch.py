@@ -218,7 +218,9 @@ def run(args):
 
     logger.prefix = "> "
 
+    logger.info("Retrieve channel id")
     channel_id = read_saved_data(conf, "channel_id", lambda: youtube.get_channel_id(conf.api_key, conf.channel_name))
+    logger.info("Retrieve list of videos")
     videos = read_saved_data(conf, "videos", lambda: youtube.get_videos(conf.api_key, channel_id))
 
     pos = 1
@@ -226,7 +228,7 @@ def run(args):
     for i in range(videos_len):
         video_id = videos[i]["id"]["videoId"]
 
-        if len(conf.filter_video_ids) > 0 and (video_id not in conf.filter_video_ids):
+        if len(conf.filter_videos_ids) > 0 and (video_id not in conf.filter_videos_ids):
             continue
 
         pos_log = str(pos + 1).rjust(len(str(videos_len)))
