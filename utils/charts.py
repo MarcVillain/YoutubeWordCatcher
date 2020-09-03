@@ -23,9 +23,7 @@ def apply_spacing(values, spacing):
 
 
 def _filter_keep(filter_video_titles, string):
-    return len(filter_video_titles) == 0 or any(
-        [True for f in filter_video_titles if f.lower() in string.lower()]
-    )
+    return len(filter_video_titles) == 0 or any([True for f in filter_video_titles if f.lower() in string.lower()])
 
 
 def generate_color_legend(colors):
@@ -42,16 +40,16 @@ def generate_color_legend(colors):
 
 def plot_bar(x_vals, x_tags, x_colors):
     """
-        bar(...) => Plot the values
+    bar(...) => Plot the values
 
-        x_vals = [2, 3]
+    x_vals = [2, 3]
 
-        . -|
-        3 -|     x
-        2 -|  x
-        1 -|
-        0 -+--|--|--|
-              0  1  .
+    . -|
+    3 -|     x
+    2 -|  x
+    1 -|
+    0 -+--|--|--|
+          0  1  .
     """
     pyplot.bar(range(len(x_vals)), x_vals, align="center", color=x_colors)
 

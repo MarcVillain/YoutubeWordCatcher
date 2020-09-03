@@ -49,7 +49,7 @@ def _match_str(str_a, str_b):
     splice_size = 10
     for i in range(len(str_a) - splice_size + 1):
         for j in range(len(str_b) - splice_size + 1):
-            if str_a[i : i + splice_size] == str_b[j : j + splice_size]:
+            if str_a[i: i + splice_size] == str_b[j: j + splice_size]:
                 return True
 
     return False
