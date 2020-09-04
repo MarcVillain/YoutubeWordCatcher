@@ -45,7 +45,6 @@ You can look at the code to edit some variables if necessary, or add your own da
 
 # Todo
 
-* Multithread data extraction
 * Manual clip sorter to remove false positives
 * Improve timestamps with SpeechRecognition plugin
 

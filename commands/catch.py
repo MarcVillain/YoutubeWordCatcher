@@ -1,10 +1,11 @@
 """
 Extract clips of youtube videos where a word is pronounced
 """
-
 import argparse
 import os
 import uuid
+from concurrent.futures.thread import ThreadPoolExecutor
+from copy import deepcopy
 
 from moviepy.video.compositing.concatenate import concatenate_videoclips
 from moviepy.video.io.VideoFileClip import VideoFileClip
@@ -87,6 +88,8 @@ class Config:
         """
         # Maximum amount of videos to download, cut and compose
         self.max_videos_amount = kwargs.get("max_videos_amount", 100000)
+        # Maximum amount of threads to use when retrieving video data and cutting clips
+        self.max_data_thread_workers = kwargs.get("max_data_thread_workers", 1)
 
 
 def _write_saved_data(conf, path, func):
@@ -96,6 +99,7 @@ def _write_saved_data(conf, path, func):
     if not conf.do_output_data:
         return data
 
+    logger.info(f"Dump value of '{path}'", prefix=conf.logger_prefix)
     io.dump_yaml(full_path, data)
     return data
 
@@ -104,7 +108,7 @@ def read_saved_data(conf, path, func, write=True, update=False):
     full_path = os.path.join(conf.data_folder, f"{path}.yaml")
 
     if not update and os.path.exists(full_path):
-        logger.info("Load saved value")
+        logger.info(f"Load value of '{path}'", prefix=conf.logger_prefix)
         return io.load_yaml(full_path)
 
     if not write:
@@ -114,11 +118,11 @@ def read_saved_data(conf, path, func, write=True, update=False):
 
 
 def _extract_video_data(conf, video_id):
-    logger.info("Extract video data")
+    logger.info("Extract video data", prefix=conf.logger_prefix)
     # Download subtitles
     with youtube.download(video_id, conf.download_folder, video=False, cleanup=conf.do_cleanup_downloads) as dl:
         if dl is None:
-            logger.error("Unable to download subtitles")
+            logger.error("Unable to download subtitles", prefix=conf.logger_prefix)
             return None
 
         data = {
@@ -128,11 +132,11 @@ def _extract_video_data(conf, video_id):
         }
 
         if not dl["subtitles_file"]["exists"]:
-            logger.error("No subtitles found")
+            logger.error("No subtitles found", prefix=conf.logger_prefix)
             return data
 
         # Extract data
-        subtitles_data = subtitles.extract_data(dl["subtitles_file"]["path"], conf.word_to_extract)
+        subtitles_data = subtitles.extract_data(video_id, dl["subtitles_file"]["path"], conf.word_to_extract)
 
         return {
             **data,
@@ -141,11 +145,11 @@ def _extract_video_data(conf, video_id):
 
 
 def _extract_video_clips(conf, video_id, video_data):
-    logger.info("Extract video clips")
+    logger.info("Extract video clips", prefix=conf.logger_prefix)
 
     # Check if there is something to extract
     if len(video_data.get("timestamps", [])) == 0:
-        logger.info("No timestamps to extract")
+        logger.info("No timestamps to extract", prefix=conf.logger_prefix)
         return []
 
     # Download video
@@ -153,7 +157,7 @@ def _extract_video_clips(conf, video_id, video_data):
         clips = []
 
         if dl is None:
-            logger.error("Unable to download video")
+            logger.error("Unable to download video", prefix=conf.logger_prefix)
             return None
 
         if not dl["video_file"]["exists"]:
@@ -165,7 +169,7 @@ def _extract_video_clips(conf, video_id, video_data):
             timestamps = video_data.get("timestamps", [])
             for i, (start, _, end) in enumerate(timestamps):
                 clip_pos = str(i + 1).rjust(len(str(len(timestamps))))
-                logger.info(f"Extract video clip ({clip_pos}/{len(timestamps)})")
+                logger.info(f"Extract video clip ({clip_pos}/{len(timestamps)})", prefix=conf.logger_prefix)
 
                 # Get absolute start and end
                 video_start = str_to_sec(start) + conf.start_shift
@@ -211,7 +215,10 @@ def _build_final_video(conf, videos):
         pos_log = str(pos + 1)
         clips_count_log = str(len(video["data"]["clips"]))
         counter_log = str(counter + 1).rjust(len(str(total)))
-        logger.info(f"Build final clip (video {video_id}: {pos_log}/{clips_count_log}) (global: {counter_log}/{total})")
+        logger.info(
+            f"Build final clip (video {video_id}: {pos_log}/{clips_count_log}) (global: {counter_log}/{total})",
+            prefix=conf.logger_prefix,
+        )
 
         video_clip = VideoFileClip(clip)
         if conf.do_text_overlay:
@@ -219,10 +226,10 @@ def _build_final_video(conf, videos):
         video_clips.append(video_clip)
 
     if len(video_clips) == 0:
-        logger.info(f"No clips to concatenate for final video")
+        logger.info(f"No clips to concatenate for final video", prefix=conf.logger_prefix)
         return
 
-    logger.info(f"Concatenate all clips for final video")
+    logger.info(f"Concatenate all clips for final video", prefix=conf.logger_prefix)
     final_clip = concatenate_videoclips(video_clips, method="compose")
     final_clip_file_path = os.path.join(
         conf.output_folder, f"{conf.channel_name}_{conf.word_to_extract}_{str(uuid.uuid4())[:6]}.mp4"
@@ -231,10 +238,49 @@ def _build_final_video(conf, videos):
     final_clip.write_videofile(final_clip_file_path, temp_audiofile=final_clip_audio_file_path)
 
 
+def _process_video(conf, videos, i):
+    video_id = videos[i]["id"]["videoId"]
+
+    if len(conf.filter_videos_ids) > 0 and (video_id not in conf.filter_videos_ids):
+        return
+
+    videos_len = min(conf.max_videos_amount, len(videos))
+    videos_len_log = videos_len if len(conf.filter_videos_ids) == 0 else len(conf.filter_videos_ids)
+    pos_log = str(i + 1).rjust(len(str(videos_len_log)))
+    # This might be an abuse as the conf is not the context but it works
+    conf.logger_prefix = f"({pos_log}/{videos_len_log}) {video_id} >> "
+
+    logger.info("Retrieve video data", prefix=conf.logger_prefix)
+    video_saved_data_path = os.path.join("videos", video_id)
+    video_data = read_saved_data(conf, video_saved_data_path, lambda: None, write=False)
+
+    if conf.do_override_video_data or video_data is None:
+        video_data = _extract_video_data(conf, video_id)
+        if video_data is None:
+            logger.info("Unable to load video data", prefix=conf.logger_prefix)
+            return
+        _write_saved_data(conf, video_saved_data_path, lambda: video_data)
+
+    if conf.do_generate_clips and (conf.do_override_clips or video_data.get("clips", None) is None):
+        clips = _extract_video_clips(conf, video_id, video_data)
+        if clips is not None:
+            video_data["clips"] = clips
+        _write_saved_data(conf, video_saved_data_path, lambda: video_data)
+
+    clips_len = len(video_data.get("clips", []))
+    if clips_len == 0:
+        logger.info("No clips to load", prefix=conf.logger_prefix)
+    else:
+        logger.info(f"Loaded {clips_len} clips", prefix=conf.logger_prefix)
+
+    videos[i]["data"] = video_data
+
+
 def run(args):
     conf = config.read(args.config, "catch", Config)
 
-    logger.prefix = "> "
+    # This might be an abuse as the conf is not the context but it works
+    conf.logger_prefix = "> "
 
     logger.info("Retrieve channel id")
     channel_id = read_saved_data(conf, "channel_id", lambda: youtube.get_channel_id(conf.api_key, conf.channel_name))
@@ -243,45 +289,15 @@ def run(args):
         conf, "videos", lambda: youtube.get_videos(conf.api_key, channel_id), update=conf.do_update_video_data
     )
 
-    pos = 1
-    videos_len = min(conf.max_videos_amount, len(videos))
-    videos_len_log = videos_len if len(conf.filter_videos_ids) == 0 else len(conf.filter_videos_ids)
-    for i in range(videos_len):
-        video_id = videos[i]["id"]["videoId"]
-
-        if len(conf.filter_videos_ids) > 0 and (video_id not in conf.filter_videos_ids):
-            continue
-
-        pos_log = str(pos).rjust(len(str(videos_len_log)))
-        logger.prefix = f"({pos_log}/{videos_len_log}) {video_id} >> "
-
-        logger.info("Retrieve video data")
-        video_saved_data_path = os.path.join("videos", video_id)
-        video_data = read_saved_data(conf, video_saved_data_path, lambda: None, write=False)
-
-        if conf.do_override_video_data or video_data is None:
-            video_data = _extract_video_data(conf, video_id)
-            if video_data is None:
-                logger.info("Unable to load video data")
-                continue
-            _write_saved_data(conf, video_saved_data_path, lambda: video_data)
-
-        if conf.do_generate_clips and (conf.do_override_clips or video_data.get("clips", None) is None):
-            clips = _extract_video_clips(conf, video_id, video_data)
-            if clips is not None:
-                video_data["clips"] = clips
-            _write_saved_data(conf, video_saved_data_path, lambda: video_data)
-
-        clips_len = len(video_data.get("clips", []))
-        if clips_len == 0:
-            logger.info("No clips to load")
-        else:
-            logger.info(f"Loaded {clips_len} clips")
-
-        videos[i]["data"] = video_data
-        pos += 1
-
-    logger.prefix = "> "
+    if conf.max_data_thread_workers <= 1:
+        for i in range(len(videos)):
+            _process_video(conf, videos, i)
+    else:
+        with ThreadPoolExecutor(max_workers=conf.max_data_thread_workers) as pool:
+            for i in range(len(videos)):
+                # We need to copy the configuration to edit the logging prefix
+                # locally to a thread to be able to use it
+                pool.submit(_process_video, deepcopy(conf), videos, i)
 
     if conf.do_generate_final_video:
         _build_final_video(conf, videos)

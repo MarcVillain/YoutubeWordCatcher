@@ -1,7 +1,6 @@
 import logging
 
 _logger = logging.getLogger("ywc")
-prefix = ""
 
 
 def setup(verbose):
@@ -15,13 +14,13 @@ def setup(verbose):
     _logger.addHandler(stream_handler)
 
 
-def info(msg, *args, **kwargs):
+def info(msg, prefix="> ", *args, **kwargs):
     _logger.info(prefix + msg, *args, **kwargs)
 
 
-def error(msg, *args, **kwargs):
+def error(msg, prefix="> ", *args, **kwargs):
     _logger.error(prefix + msg, *args, **kwargs)
 
 
-def debug(msg, *args, **kwargs):
+def debug(msg, prefix="> ", *args, **kwargs):
     _logger.debug(prefix + msg, *args, **kwargs)

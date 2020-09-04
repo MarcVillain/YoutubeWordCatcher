@@ -105,13 +105,13 @@ class download:
         }
 
         if self.subtitles:
-            logger.info("Download subtitles file")
+            logger.info(f"Download subtitles file", prefix=f"{self.video_id} >> ")
             ydl_config["writesubtitles"] = True
             ydl_config["subtitleslangs"] = ["en"]
             ydl_config["writeautomaticsub"] = True
 
         if self.video:
-            logger.info("Download video file")
+            logger.info("Download video file", prefix=f"{self.video_id} >> ")
         else:
             ydl_config["skip_download"] = True
 
@@ -120,7 +120,7 @@ class download:
             try:
                 ydl.download([video_url])
             except DownloadError as e:
-                logger.error(f"Unable to download: {e}")
+                logger.error(f"Unable to download: {e}", prefix=f"{self.video_id} >> ")
                 return None
 
         return {
@@ -138,21 +138,21 @@ class download:
         if self.cleanup:
             if os.path.exists(self.subtitles_file_path):
                 try:
-                    logger.info("Remove subtitles file")
+                    logger.info("Remove subtitles file", prefix=f"{self.video_id} >> ")
                     os.remove(self.subtitles_file_path)
                 except OSError:
                     pass
 
             if os.path.exists(self.video_file_path):
                 try:
-                    logger.info("Remove video file")
+                    logger.info("Remove video file", prefix=f"{self.video_id} >> ")
                     os.remove(self.video_file_path)
                 except OSError:
                     pass
 
             if os.path.exists(f"{self.video_file_path}.part"):
                 try:
-                    logger.info("Remove incomplete video file")
+                    logger.info("Remove incomplete video file", prefix=f"{self.video_id} >> ")
                     os.remove(f"{self.video_file_path}.part")
                 except OSError:
                     pass
