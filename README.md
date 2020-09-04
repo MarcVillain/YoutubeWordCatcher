@@ -1,7 +1,7 @@
 YoutubeWordCatcher
 ===
 
-Little script that extracts every clip where a Youtuber says a specific word and builds a big video out of it.
+Extract every clip of a Youtube channel's videos where a specific word is pronounced and build a big video out of it.
 
 # Install
 

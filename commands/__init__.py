@@ -20,16 +20,23 @@ def parse():
                 "func_run": module.__getattribute__("run"),
             }
 
-    # Build usage string
-    usage = "ywc [-h] [-v] <command> [options]\n\navailable commands:"
+    # Build usage and description string
+    usage = "ywc [-h] [-v] <command> [options]"
+    description = (
+        "Extract every clip of a Youtube channel's videos where a specific word is\n"
+        "pronounced and build a big video out of it.\n\n"
+        "available commands:"
+    )
     command_max_len = 4 * math.ceil(len(max(commands.keys(), key=len)) / 4)
     for command_name, command in commands.items():
         command_name = command_name.ljust(command_max_len)
         command_desc = command["description"]
-        usage += f"\n    {command_name}{command_desc}"
+        description += f"\n    {command_name}{command_desc}"
 
     # Build parser
-    parser = argparse.ArgumentParser(usage=usage)
+    parser = argparse.ArgumentParser(
+        usage=usage, description=description, formatter_class=argparse.RawTextHelpFormatter
+    )
     parser.add_argument(
         "-v",
         "--verbose",
