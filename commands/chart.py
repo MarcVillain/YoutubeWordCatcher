@@ -27,12 +27,13 @@ class Config:
         self.channel_name = kwargs.get("channel_name", "")
         # Word to extract from the channel videos
         self.word_to_extract = kwargs.get("word_to_extract", "")
+
+        """
+        Options
+        """
         # Dictionary of title keys associated with color values
         # example: {"[TAG]": "red"}
-        self.title_colors = ast.literal_eval(kwargs.get("title_colors", "{}"))
-        # Above the specified 'n' spacing, make the tags appear every so often
-        # example: 40 elements with a space of 20 will have a tag appear every one in two.
-        self.tag_spacing = kwargs.get("tag_spacing", 20)
+        self.title_colors = dict(ast.literal_eval(kwargs.get("title_colors", "{}")))
 
         """
         Folders
@@ -47,16 +48,23 @@ class Config:
         """
         Switches
         """
-        self.do_output_file = kwargs.get("do_output_file", False)
-        self.do_display_chart = kwargs.get("do_display_chart", True)
+        self.do_output_file = bool(kwargs.get("do_output_file", False))
+        self.do_display_chart = bool(kwargs.get("do_display_chart", True))
 
         """
         Filters
         """
         # Only work with these video ids
-        self.filter_videos_ids = kwargs.get("filter_videos_ids", [])
+        self.filter_videos_ids = list(kwargs.get("filter_videos_ids", []))
         # Only work with these video titles
-        self.filter_videos_titles = kwargs.get("filter_videos_titles", [])
+        self.filter_videos_titles = list(kwargs.get("filter_videos_titles", []))
+
+        """
+        Thresholds
+        """
+        # Above the specified 'n' spacing, make the tags appear every so often
+        # example: 40 elements with a space of 20 will have a tag appear every one in two.
+        self.tag_spacing = int(kwargs.get("tag_spacing", 20))
 
 
 def run(args):

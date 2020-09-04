@@ -51,45 +51,45 @@ class Config:
         Clips settings
         """
         # Maximum length of a clip (in seconds)
-        self.max_length = kwargs.get("max_length", 1.5)
+        self.max_length = float(kwargs.get("max_length", 1.5))
         # Shift of the start timestamp of a clip (in seconds)
-        self.start_shift = kwargs.get("start_shift", -0.25)
+        self.start_shift = float(kwargs.get("start_shift", -0.25))
         # Shift of the end timestamp of a clip (in seconds)
-        self.end_shift = kwargs.get("end_shift", 0.75)
+        self.end_shift = float(kwargs.get("end_shift", 0.75))
 
         """
         Switches
         """
         # Should the program data be outputted?
-        self.do_output_data = kwargs.get("do_output_data", True)
+        self.do_output_data = bool(kwargs.get("do_output_data", True))
         # Should the text overlay be applied?
-        self.do_text_overlay = kwargs.get("do_text_overlay", True)
+        self.do_text_overlay = bool(kwargs.get("do_text_overlay", True))
         # Should the downloaded files be deleted?
-        self.do_cleanup_downloads = kwargs.get("do_cleanup_downloads", True)
+        self.do_cleanup_downloads = bool(kwargs.get("do_cleanup_downloads", True))
         # Should the video datas be computed even if they already exists?
-        self.do_override_video_data = kwargs.get("do_override_video_data", False)
+        self.do_override_video_data = bool(kwargs.get("do_override_video_data", False))
         # Should the clips be generated even if they already exists?
-        self.do_override_clips = kwargs.get("do_override_clips", False)
+        self.do_override_clips = bool(kwargs.get("do_override_clips", False))
         # Should the clips be generated?
-        self.do_generate_clips = kwargs.get("do_generate_clips", True)
+        self.do_generate_clips = bool(kwargs.get("do_generate_clips", True))
         # Should the final video be generated?
-        self.do_generate_final_video = kwargs.get("do_generate_final_video", True)
+        self.do_generate_final_video = bool(kwargs.get("do_generate_final_video", True))
         # Should the videos list data be updated?
-        self.do_update_video_data = kwargs.get("do_update_video_data", False)
+        self.do_update_video_data = bool(kwargs.get("do_update_video_data", False))
 
         """
         Filters
         """
         # Only work with these video ids
-        self.filter_videos_ids = kwargs.get("filter_videos_ids", [])
+        self.filter_videos_ids = list(kwargs.get("filter_videos_ids", []))
 
         """
         Thresholds
         """
         # Maximum amount of videos to download, cut and compose
-        self.max_videos_amount = kwargs.get("max_videos_amount", 100000)
+        self.max_videos_amount = int(kwargs.get("max_videos_amount", 100000))
         # Maximum amount of threads to use when retrieving video data and cutting clips
-        self.max_data_thread_workers = kwargs.get("max_data_thread_workers", 1)
+        self.max_data_thread_workers = int(kwargs.get("max_data_thread_workers", 1))
 
 
 def _write_saved_data(conf, path, func):
