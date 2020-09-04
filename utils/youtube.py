@@ -121,6 +121,7 @@ class download:
                 ydl.download([video_url])
             except DownloadError as e:
                 logger.error(f"Unable to download: {e}")
+                return None
 
         return {
             "subtitles_file": {

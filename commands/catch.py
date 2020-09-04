@@ -117,6 +117,10 @@ def _extract_video_data(conf, video_id):
     logger.info("Extract video data")
     # Download subtitles
     with youtube.download(video_id, conf.download_folder, video=False, cleanup=conf.do_cleanup_downloads) as dl:
+        if dl is None:
+            logger.error("Unable to download subtitles")
+            return None
+
         data = {
             "id": video_id,
             "subtitles_file": dl["subtitles_file"],
@@ -147,6 +151,10 @@ def _extract_video_clips(conf, video_id, video_data):
     # Download video
     with youtube.download(video_id, conf.download_folder, subtitles=False, cleanup=conf.do_cleanup_downloads) as dl:
         clips = []
+
+        if dl is None:
+            logger.error("Unable to download video")
+            return None
 
         if not dl["video_file"]["exists"]:
             logger.error("No video file found")
@@ -253,13 +261,18 @@ def run(args):
 
         if conf.do_override_video_data or video_data is None:
             video_data = _extract_video_data(conf, video_id)
+            if video_data is None:
+                logger.info("Unable to load video data")
+                continue
             _write_saved_data(conf, video_saved_data_path, lambda: video_data)
 
         if conf.do_generate_clips and (conf.do_override_clips or video_data.get("clips", None) is None):
-            video_data["clips"] = _extract_video_clips(conf, video_id, video_data)
+            clips = _extract_video_clips(conf, video_id, video_data)
+            if clips is not None:
+                video_data["clips"] = clips
             _write_saved_data(conf, video_saved_data_path, lambda: video_data)
 
-        clips_len = len(video_data["clips"])
+        clips_len = len(video_data.get("clips", []))
         if clips_len == 0:
             logger.info("No clips to load")
         else:
