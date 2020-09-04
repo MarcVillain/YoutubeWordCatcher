@@ -11,7 +11,7 @@ def _gen_data(conf, videos):
         video_id = video["id"]["videoId"]
         video_title = video["snippet"]["title"]
         video_date = video["snippet"]["publishedAt"]
-        timestamps = video["data"]["timestamps"]
+        timestamps = video["data"].get("timestamps", [])
         color = charts.pick_color(conf.title_colors, video_title)
 
         x_tags.append(f"{video_date} ({video_id})")
