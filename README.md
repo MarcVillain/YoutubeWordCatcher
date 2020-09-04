@@ -23,23 +23,6 @@ You can find all the possible values for the configuration in the `__init__()` m
 
 Note that whenever there are dictionaries or lists, you can represent the data on a multiline but beware of the indentation.
 
-Example:
-```ini
-[section]
-key=value
-
-list=["a", "b"]
-list=[
-     "a",
-     "b",
-     ]
-
-dict={"k": "v"}
-dict={
-     "k": "v",
-     }
-```
-
 # Run
 
 In order to run properly, you need to get a Youtube API key, which you can obtain by following the instructions [here](https://developers.google.com/youtube/registering_an_application).
@@ -60,9 +43,9 @@ python ymc.py chart --help
 
 You can look at the code to edit some variables if necessary, or add your own data visualization.
 
-# TODO
+# Todo
 
-* Multithread the data extraction
+* Multithread data extraction
 * Manual clip sorter to remove false positives
 * Improve timestamps with SpeechRecognition plugin
 
