@@ -70,6 +70,7 @@ class Config:
 def run(args):
     # Load configuration
     conf = config.read(args.config, "chart", Config)
+    conf.logger_prefix = "> "
 
     # Load videos and their data
     videos = read_saved_data(conf, "videos", lambda: [], write=False)
@@ -79,9 +80,9 @@ def run(args):
         video_saved_data_path = os.path.join("videos", video_id)
 
         pos_log = str(i + 1).rjust(len(str(videos_len)))
-        logger.prefix = f"({pos_log}/{videos_len}) {video_id} >> "
+        conf.logger_prefix = f"({pos_log}/{videos_len}) {video_id} >> "
 
-        logger.info("Retrieve video data")
+        logger.info("Retrieve video data", prefix=conf.logger_prefix)
         video_data = read_saved_data(conf, video_saved_data_path, lambda: {}, write=False)
         videos[i]["data"] = video_data
 
@@ -91,8 +92,6 @@ def run(args):
     if len(conf.filter_videos_titles) > 0:
         videos = [video for video in videos if video["snippet"]["title"] in conf.filter_videos_titles]
         conf.title_colors = [(title, color) for title, color in conf.title_colors if title in conf.filter_videos_titles]
-
-    logger.prefix = "> "
 
     # Run compute() function in the proper module
     module = importlib.import_module(f"commands.charts.{args.type}")
