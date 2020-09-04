@@ -5,6 +5,7 @@ Generate statistical charts on the extracted timestamps
 import argparse
 import ast
 import importlib
+import math
 import os
 import pkgutil
 
@@ -93,7 +94,17 @@ def run(args):
 def parse(prog, args):
     chart_types = [module.name for module in pkgutil.iter_modules([os.path.join("commands", "charts")])]
 
-    parser = argparse.ArgumentParser(prog=prog, description=__doc__)
+    # Build description string
+    description = f"{__doc__}\n\navailable types:"
+    type_max_len = 4 * math.ceil(len(max(chart_types, key=len)) / 4)
+    for chart_type in chart_types:
+        module = importlib.import_module(f"commands.charts.{chart_type}")
+        type_name = chart_type.ljust(type_max_len)
+        type_desc = module.__doc__.strip().lower()
+        description += f"\n    {type_name}{type_desc}"
+
+    # Parse arguments
+    parser = argparse.ArgumentParser(prog=prog, description=description, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument(
         "-c",
         "--config",
@@ -105,6 +116,7 @@ def parse(prog, args):
         "-t",
         "--type",
         default="average",
+        metavar="NAME",
         choices=chart_types,
         help="type of chart to generate",
     )

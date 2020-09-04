@@ -1,12 +1,12 @@
-from matplotlib import pyplot
+"""
+Amount of extracted word per video over time
+"""
+from utils import charts
 
-from utils import charts, logger
 
-
-def compute(conf, videos):
+def _gen_data(conf, videos):
     x_tags, x_vals, x_colors = [], [], []
 
-    logger.info("Compute the data")
     for video in videos:
         video_id = video["id"]["videoId"]
         video_title = video["snippet"]["title"]
@@ -18,21 +18,9 @@ def compute(conf, videos):
         x_vals.append(len(timestamps))
         x_colors.append(color)
 
-    logger.info("Sort the results")
-    # Sort by tags
-    x_tags, x_vals, x_colors = zip(*sorted(zip(x_tags, x_vals, x_colors)))
+    # Return sorted results by tag
+    return zip(*sorted(zip(x_tags, x_vals, x_colors)))
 
-    logger.info("Build the chart")
-    x_tags = charts.apply_spacing(x_tags, conf.tag_spacing)
-    charts.generate_color_legend(conf.title_colors)
-    charts.plot_bar(x_vals, x_tags, x_colors)
 
-    # Export the chart
-    if conf.do_output_file:
-        chart_file_path = charts.save(f"{conf.channel_name}_amount_of_{conf.word_to_extract}_", conf.charts_folder)
-        logger.info(f"Chart saved at: {chart_file_path}")
-
-    # Display the chart
-    if conf.do_display_chart:
-        logger.info("Display the chart")
-        pyplot.show()
+def compute(conf, videos):
+    charts.gen_bar_chart(conf, videos, _gen_data)
