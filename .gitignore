@@ -2,9 +2,6 @@
 .idea/
 config.ini
 
-# Temporary
-backup/
-
 # Created by https://www.toptal.com/developers/gitignore/api/linux,python,macos,vim,pycharm
 # Edit at https://www.toptal.com/developers/gitignore?templates=linux,python,macos,vim,pycharm
 
