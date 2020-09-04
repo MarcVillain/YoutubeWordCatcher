@@ -170,10 +170,11 @@ def _extract_video_clips(conf, video_id, video_data):
 
                 # Create destination
                 subclip_file_path = os.path.join(conf.output_folder, "clips", video_id, f"{i}.mp4")
+                subclip_audio_file_path = subclip_file_path.replace(".mp4", ".mp3")
                 os.makedirs(os.path.dirname(subclip_file_path), exist_ok=True)
 
                 # Save clip
-                subclip.write_videofile(subclip_file_path)
+                subclip.write_videofile(subclip_file_path, temp_audiofile=subclip_audio_file_path)
                 clips.append(subclip_file_path)
         finally:
             video_clip.close()
@@ -218,7 +219,8 @@ def _build_final_video(conf, videos):
     final_clip_file_path = os.path.join(
         conf.output_folder, f"{conf.channel_name}_{conf.word_to_extract}_{str(uuid.uuid4())[:6]}.mp4"
     )
-    final_clip.write_videofile(final_clip_file_path)
+    final_clip_audio_file_path = final_clip_file_path.replace(".mp4", ".mp3")
+    final_clip.write_videofile(final_clip_file_path, temp_audiofile=final_clip_audio_file_path)
 
 
 def run(args):
