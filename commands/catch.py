@@ -367,7 +367,7 @@ def _build_final_video(conf, videos):
     final_clip_file_path = os.path.join(conf.build_folder, f"{conf.channel_name}_{conf.word_to_extract}.mp4")
 
     while os.path.exists(final_clip_file_path):
-        final_clip_file_path = final_clip_file_path.replace(".mp4", "") + f"_{uuid.uuid4()}"
+        final_clip_file_path = f"{final_clip_file_path[:-4]}_{uuid.uuid4()[:6]}.mp4"
 
     try:
         os.rename(last_temp_clip_file_path, final_clip_file_path)
