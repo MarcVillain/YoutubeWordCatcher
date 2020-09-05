@@ -194,7 +194,9 @@ def _extract_video_clips(conf, video_id, video_data):
                 os.makedirs(os.path.dirname(subclip_file_path), exist_ok=True)
 
                 # Save clip
-                subclip.write_videofile(subclip_file_path, temp_audiofile=subclip_audio_file_path)
+                subclip.write_videofile(
+                    subclip_file_path, temp_audiofile=subclip_audio_file_path, bitrate="20000k", audio_bitrate="2000k"
+                )
                 clips.append(subclip_file_path)
         finally:
             video_clip.close()
@@ -278,7 +280,13 @@ def _build_final_video(conf, videos):
         logger.info("No clips to build")
         return
 
-    video_clips_queue = deque(read_saved_data(conf, os.path.join("build", "video_clips_queue"), lambda: [clip_info for clip_info in _clip_list(conf, videos)]))
+    video_clips_queue = deque(
+        read_saved_data(
+            conf,
+            os.path.join("build", "video_clips_queue"),
+            lambda: [clip_info for clip_info in _clip_list(conf, videos)],
+        )
+    )
     temp_clips_queue = deque(read_saved_data(conf, os.path.join("build", "temp_clips_queue"), lambda: []))
 
     temp_clips_files_counter = read_saved_data(conf, os.path.join("build", "temp_clips_files_counter"), lambda: 1)
@@ -334,7 +342,9 @@ def _build_final_video(conf, videos):
             logger.info(f"Save temporary clip {temp_clips_files_counter}")
             temp_clip_file_path = os.path.join(conf.build_folder, f"t{threshold}_c{temp_clips_files_counter}.mp4")
             temp_clip_audio_file_path = temp_clip_file_path.replace(".mp4", ".mp3")
-            temp_clip.write_videofile(temp_clip_file_path, temp_audiofile=temp_clip_audio_file_path, bitrate="20000k", audio_bitrate="2000k")
+            temp_clip.write_videofile(
+                temp_clip_file_path, temp_audiofile=temp_clip_audio_file_path, bitrate="20000k", audio_bitrate="2000k"
+            )
             temp_clips_files_counter += 1
 
             # Add temporary clip to list
