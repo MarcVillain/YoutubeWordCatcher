@@ -93,6 +93,10 @@ class Config:
         self.max_videos_amount = int(kwargs.get("max_videos_amount", 100000))
         # Maximum amount of threads to use when retrieving video data and cutting clips
         self.max_data_thread_workers = int(kwargs.get("max_data_thread_workers", 1))
+        # Maximum number of files to open at once
+        # This is useful when building the last clip as MoviePy creates a file
+        # directory for every clip we open, so we have to do them by batches
+        self.max_open_files = int(kwargs.get("max_open_files", 60))
 
 
 def _write_saved_data(conf, path, func):
@@ -266,7 +270,7 @@ def _build_final_video(conf, videos):
     max_videos_amount = min(conf.max_videos_amount, len(videos))
     videos = videos[:max_videos_amount]
 
-    threshold = 50
+    threshold = conf.max_open_files
     total = sum(1 for _ in _clip_list(conf, videos))
 
     if total == 0:
