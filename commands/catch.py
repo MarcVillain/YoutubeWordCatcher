@@ -8,6 +8,7 @@ from collections import deque
 from concurrent.futures.thread import ThreadPoolExecutor
 from copy import deepcopy
 
+from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from moviepy.video.compositing.concatenate import concatenate_videoclips
 from moviepy.video.io.VideoFileClip import VideoFileClip
 
@@ -333,7 +334,7 @@ def _build_final_video(conf, videos):
             logger.info(f"Save temporary clip {temp_clips_files_counter}")
             temp_clip_file_path = os.path.join(conf.build_folder, f"t{threshold}_c{temp_clips_files_counter}.mp4")
             temp_clip_audio_file_path = temp_clip_file_path.replace(".mp4", ".mp3")
-            temp_clip.write_videofile(temp_clip_file_path, temp_audiofile=temp_clip_audio_file_path)
+            temp_clip.write_videofile(temp_clip_file_path, temp_audiofile=temp_clip_audio_file_path, bitrate="20000k", audio_bitrate="2000k")
             temp_clips_files_counter += 1
 
             # Add temporary clip to list
@@ -345,6 +346,13 @@ def _build_final_video(conf, videos):
 
             # Close videos clips file descriptors
             for video_clip in video_clips:
+                # MoviePy does not automatically close the CompositeVideoClip clips,
+                # causing issues with a "too many file descriptors" error
+                if isinstance(video_clip, CompositeVideoClip):
+                    for c in video_clip.clips:
+                        c.close()
+                    if video_clip.bg is not None:
+                        video_clip.bg.close()
                 video_clip.close()
 
             # Cleanup temporary clips

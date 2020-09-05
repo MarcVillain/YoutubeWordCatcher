@@ -36,4 +36,4 @@ def add_info_overlay(clip, video, pos, counter, total):
     if clip.size != [1920, 1080]:
         clip = clip.fx(vfx.resize, width=1920)
 
-    return CompositeVideoClip([clip, clip_text_title, clip_text_counter], size=(1920, 1080))
+    return CompositeVideoClip([clip, clip_text_title, clip_text_counter], size=(1920, 1080), use_bgclip=True)
