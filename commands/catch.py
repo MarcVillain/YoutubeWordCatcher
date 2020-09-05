@@ -306,9 +306,10 @@ def _build_final_video(conf, videos):
                 # Build video clip
                 video_id = video["id"]["videoId"]
                 clips_count_log = str(len(video["data"]["clips"]))
+                pos_log = str(pos).rjust(len(clips_count_log))
                 counter_log = str(counter).rjust(len(str(total)))
                 logger.info(
-                    f"Build clip (video {video_id}: {pos}/{clips_count_log}) (global: {counter_log}/{total})",
+                    f"Build clip (video {video_id}: {pos_log}/{clips_count_log}) (global: {counter_log}/{total})",
                 )
                 video_clip = VideoFileClip(clip)
                 if conf.do_text_overlay:
