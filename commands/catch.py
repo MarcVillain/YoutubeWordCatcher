@@ -302,14 +302,16 @@ def _build_final_video(conf, videos):
             while len(video_clips_queue) > 0 and len(clips_group) < threshold:
                 clips_group.append(video_clips_queue.popleft())
 
-            for video, clip, pos, counter in clips_group:
+            for i, (video, clip, pos, counter) in enumerate(clips_group):
                 # Build video clip
                 video_id = video["id"]["videoId"]
                 clips_count_log = str(len(video["data"]["clips"]))
                 pos_log = str(pos).rjust(len(clips_count_log))
                 counter_log = str(counter).rjust(len(str(total)))
+                i_log = str(i + 1).rjust(len(str(threshold)))
                 logger.info(
-                    f"Build clip (video {video_id}: {pos_log}/{clips_count_log}) (global: {counter_log}/{total})",
+                    f"Build clip {pos_log}/{clips_count_log} of {video_id}",
+                    prefix=f"[{counter_log}/{total}|{i_log}/{threshold}] >> ",
                 )
                 video_clip = VideoFileClip(clip)
                 if conf.do_text_overlay:
