@@ -1,3 +1,5 @@
+import html
+
 import moviepy.video.fx.all as vfx
 from moviepy.video.VideoClip import TextClip
 from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
@@ -5,7 +7,7 @@ from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 
 def add_info_overlay(clip, video, pos, counter, total):
     video_id = video["id"]["videoId"]
-    video_title = video["snippet"]["title"]
+    video_title = html.unescape(video["snippet"]["title"])
     start, _, end = video["data"]["timestamps"][pos - 1]
     episode_counter = str(pos)
     aligned_counter = str(counter).rjust(len(str(total)))

@@ -7,7 +7,7 @@ def load_yaml(file_path):
     if not os.path.exists(file_path):
         return None
 
-    with open(file_path, "r") as f:
+    with open(file_path, "r", encoding="utf8") as f:
         return yaml.load(f, Loader=yaml.FullLoader)
 
 
@@ -17,5 +17,5 @@ def dump_yaml(file_path, data):
 
     # TODO: If file already exists, dump aside then move
     #       to prevent data loss (example: when using ctrl+c)
-    with open(file_path, "w") as f:
+    with open(file_path, "w", encoding="utf8") as f:
         f.write(yaml.dump(data))
