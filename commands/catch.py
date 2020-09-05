@@ -4,6 +4,7 @@ Extract clips of youtube videos where a word is pronounced
 import argparse
 import os
 import uuid
+from collections import deque
 from concurrent.futures.thread import ThreadPoolExecutor
 from copy import deepcopy
 
@@ -81,7 +82,9 @@ class Config:
         Filters
         """
         # Only work with these video ids
-        self.filter_videos_ids = list(kwargs.get("filter_videos_ids", []))
+        self.filter_videos_ids = kwargs.get("filter_videos_ids", [])
+        # Ignore these video ids
+        self.filter_out_videos_ids = kwargs.get("filter_out_videos_ids", [])
 
         """
         Thresholds
@@ -181,7 +184,7 @@ def _extract_video_clips(conf, video_id, video_data):
                 subclip = video_clip.subclip(video_start, video_end)
 
                 # Create destination
-                subclip_file_path = os.path.join(conf.output_folder, "clips", video_id, f"{i}.mp4")
+                subclip_file_path = os.path.join(conf.output_folder, "clips", video_id, f"{clip_pos}.mp4")
                 subclip_audio_file_path = subclip_file_path.replace(".mp4", ".mp3")
                 os.makedirs(os.path.dirname(subclip_file_path), exist_ok=True)
 
@@ -194,61 +197,22 @@ def _extract_video_clips(conf, video_id, video_data):
         return clips
 
 
-def _clip_list(conf, videos):
-    max_videos_amount = min(conf.max_videos_amount, len(videos))
-    for video in videos[:max_videos_amount]:
-        video_id = video["id"]["videoId"]
-        if len(conf.filter_videos_ids) > 0 and (video_id not in conf.filter_videos_ids):
-            continue
-
-        if len(video["data"]["clips"]) > 0:
-            for pos, clip in enumerate(video["data"]["clips"]):
-                yield video, clip, pos
-
-
-def _build_final_video(conf, videos):
-    video_clips = []
-    total = sum(1 for _ in _clip_list(conf, videos))
-
-    for counter, (video, clip, pos) in enumerate(_clip_list(conf, videos)):
-        video_id = video["id"]["videoId"]
-        pos_log = str(pos + 1)
-        clips_count_log = str(len(video["data"]["clips"]))
-        counter_log = str(counter + 1).rjust(len(str(total)))
-        logger.info(
-            f"Build final clip (video {video_id}: {pos_log}/{clips_count_log}) (global: {counter_log}/{total})",
-            prefix=conf.logger_prefix,
-        )
-
-        video_clip = VideoFileClip(clip)
-        if conf.do_text_overlay:
-            video_clip = editor.add_info_overlay(video_clip, video, pos, counter, total)
-        video_clips.append(video_clip)
-
-    if len(video_clips) == 0:
-        logger.info(f"No clips to concatenate for final video", prefix=conf.logger_prefix)
-        return
-
-    logger.info(f"Concatenate all clips for final video", prefix=conf.logger_prefix)
-    final_clip = concatenate_videoclips(video_clips, method="compose")
-    final_clip_file_path = os.path.join(
-        conf.output_folder, f"{conf.channel_name}_{conf.word_to_extract}_{str(uuid.uuid4())[:6]}.mp4"
-    )
-    final_clip_audio_file_path = final_clip_file_path.replace(".mp4", ".mp3")
-    final_clip.write_videofile(final_clip_file_path, temp_audiofile=final_clip_audio_file_path)
-
-
 def _process_video(conf, videos, i):
     video_id = videos[i]["id"]["videoId"]
 
     if len(conf.filter_videos_ids) > 0 and (video_id not in conf.filter_videos_ids):
+        logger.info("Ignored", prefix=conf.logger_prefix)
+        return
+    if len(conf.filter_out_videos_ids) > 0 and (video_id in conf.filter_out_videos_ids):
+        logger.info("Filtered out", prefix=conf.logger_prefix)
         return
 
-    videos_len = min(conf.max_videos_amount, len(videos))
-    videos_len_log = videos_len if len(conf.filter_videos_ids) == 0 else len(conf.filter_videos_ids)
-    pos_log = str(i + 1).rjust(len(str(videos_len_log)))
+    max_videos_amount = min(conf.max_videos_amount, len(videos))
+    videos = videos[:max_videos_amount]
+
+    pos_log = str(i + 1).rjust(len(str(max_videos_amount)))
     # This might be an abuse as the conf is not the context but it works
-    conf.logger_prefix = f"({pos_log}/{videos_len_log}) {video_id} >> "
+    conf.logger_prefix = f"({pos_log}/{max_videos_amount}) {video_id} >> "
 
     logger.info("Retrieve video data", prefix=conf.logger_prefix)
     video_saved_data_path = os.path.join("videos", video_id)
@@ -276,6 +240,132 @@ def _process_video(conf, videos, i):
     videos[i]["data"] = video_data
 
 
+def _clip_list(conf, videos):
+    counter = 0
+
+    for video in videos:
+        video_id = video["id"]["videoId"]
+        if len(conf.filter_videos_ids) > 0 and (video_id not in conf.filter_videos_ids):
+            continue
+        if len(conf.filter_out_videos_ids) > 0 and (video_id in conf.filter_out_videos_ids):
+            continue
+
+        if len(video["data"].get("clips", [])) > 0:
+            for i, clip in enumerate(video["data"]["clips"]):
+                counter += 1
+                yield video, clip, i + 1, counter
+
+
+def _build_final_video(conf, videos):
+    logger.info("Build final clip")
+
+    # TODO: Check if final file already exists
+
+    # Ensure build folder exists
+    os.makedirs(conf.build_folder, exist_ok=True)
+
+    # Define some useful variables
+    max_videos_amount = min(conf.max_videos_amount, len(videos))
+    videos = videos[:max_videos_amount]
+
+    threshold = 61
+    total = sum(1 for _ in _clip_list(conf, videos))
+
+    if total == 0:
+        logger.info("No clips to build")
+        return
+
+    video_clips_queue = deque([clip_info for clip_info in _clip_list(conf, videos)])
+    temp_clips_queue = deque([])
+
+    temp_clips_files_counter = 1
+
+    # While there are clips to concatenate
+    while len(video_clips_queue) > 0 or len(temp_clips_queue) > 2:
+        # TODO: Preload [temp_clips_files_counter] file if it exists
+
+        video_clips = []
+        do_concatenate_videos_clips = len(video_clips_queue) > 0
+
+        if do_concatenate_videos_clips:
+            # Create the group of videos to be concatenated
+            clips_group = []
+            while len(video_clips_queue) > 0 and len(clips_group) < threshold:
+                clips_group.append(video_clips_queue.popleft())
+
+            for video, clip, pos, counter in clips_group:
+                # Build video clip
+                video_id = video["id"]["videoId"]
+                clips_count_log = str(len(video["data"]["clips"]))
+                counter_log = str(counter).rjust(len(str(total)))
+                logger.info(
+                    f"Build clip (video {video_id}: {pos}/{clips_count_log}) (global: {counter_log}/{total})",
+                )
+                video_clip = VideoFileClip(clip)
+                if conf.do_text_overlay:
+                    video_clip = editor.add_info_overlay(video_clip, video, pos, counter, total)
+
+                # Add video clip to list
+                video_clips.append(video_clip)
+        else:
+            # Create the group of temporary clips videos to be concatenated
+            clips_group = []
+            while len(temp_clips_queue) > 0 and len(clips_group) < threshold:
+                temp_clip = temp_clips_queue.popleft()
+                # Prevent clips de-ordering
+                if temp_clip is None:
+                    if len(clips_group) == 1:
+                        # Nothing to change or build really, just push pack the video file
+                        temp_clips_queue.append(clips_group[0])
+                        clips_group = []
+                    # Ensure we are marking the build loop to prevent de-ordering
+                    temp_clips_queue.append(None)
+                    break
+                clips_group.append(temp_clip)
+
+            # Add video clips to list
+            video_clips = [VideoFileClip(clip) for clip in clips_group]
+
+        if len(video_clips) > 0:
+            logger.info("Concatenate clips into a temporary clip")
+            temp_clip = concatenate_videoclips(video_clips, method="compose")
+
+            logger.info(f"Save temporary clip {temp_clips_files_counter}")
+            temp_clip_file_path = os.path.join(conf.build_folder, f"t{threshold}_c{temp_clips_files_counter}.mp4")
+            temp_clip_audio_file_path = temp_clip_file_path.replace(".mp4", ".mp3")
+            temp_clip.write_videofile(temp_clip_file_path, temp_audiofile=temp_clip_audio_file_path)
+            temp_clips_files_counter += 1
+
+            # Add temporary clip to list
+            temp_clips_queue.append(temp_clip_file_path)
+
+            # Ensure we are marking the build loop to prevent de-ordering
+            if do_concatenate_videos_clips and len(video_clips_queue) == 0:
+                temp_clips_queue.append(None)
+
+            # Close videos clips file descriptors
+            for video_clip in video_clips:
+                video_clip.close()
+
+            # Cleanup temporary clips
+            # (remove clips that got concatenated into another clip and are no longer needed)
+            if not do_concatenate_videos_clips:
+                for video_clip in video_clips:
+                    try:
+                        logger.info(f"Remove temporary clip '{os.path.basename(video_clip.filename)}'")
+                        os.remove(video_clip.filename)
+                    except OSError as e:
+                        logger.error(f"Unable to remove clip: {e}")
+
+    # Move final clip to desired result location
+    last_temp_clip_file_path = temp_clips_queue[0] or temp_clips_queue[1]
+    final_clip_file_path = os.path.join(conf.build_folder, f"{conf.channel_name}_{conf.word_to_extract}.mp4")
+    try:
+        os.rename(last_temp_clip_file_path, final_clip_file_path)
+    except OSError as e:
+        logger.error(f"Unable to rename temporary clip: {e}")
+
+
 def run(args):
     conf = config.read(args.config, "catch", Config)
 
@@ -289,12 +379,14 @@ def run(args):
         conf, "videos", lambda: youtube.get_videos(conf.api_key, channel_id), update=conf.do_update_video_data
     )
 
+    max_videos_amount = min(conf.max_videos_amount, len(videos))
+
     if conf.max_data_thread_workers <= 1:
-        for i in range(len(videos)):
+        for i in range(max_videos_amount):
             _process_video(conf, videos, i)
     else:
         with ThreadPoolExecutor(max_workers=conf.max_data_thread_workers) as pool:
-            for i in range(len(videos)):
+            for i in range(max_videos_amount):
                 # We need to copy the configuration to edit the logging prefix
                 # locally to a thread to be able to use it
                 pool.submit(_process_video, deepcopy(conf), videos, i)

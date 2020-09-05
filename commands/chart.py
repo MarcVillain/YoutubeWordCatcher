@@ -55,9 +55,9 @@ class Config:
         Filters
         """
         # Only work with these video ids
-        self.filter_videos_ids = list(kwargs.get("filter_videos_ids", []))
+        self.filter_videos_ids = kwargs.get("filter_videos_ids", [])
         # Only work with these video titles
-        self.filter_videos_titles = list(kwargs.get("filter_videos_titles", []))
+        self.filter_videos_titles = kwargs.get("filter_videos_titles", [])
 
         """
         Thresholds
