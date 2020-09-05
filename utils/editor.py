@@ -13,7 +13,7 @@ def add_info_overlay(clip, video, pos, counter, total):
     clip_text_title = (
         TextClip(
             txt=f"{video_title}\nhttps://youtube.com/watch?v={video_id}\nTime: {start}",
-            fontsize=12,
+            fontsize=24,
             color="black",
             bg_color="white",
             align="west",
@@ -24,7 +24,7 @@ def add_info_overlay(clip, video, pos, counter, total):
     clip_text_counter = (
         TextClip(
             txt=f"Episode counter: {episode_counter}\nTotal counter  : {aligned_counter}/{total}",
-            fontsize=12,
+            fontsize=24,
             color="black",
             bg_color="white",
             align="west",
@@ -36,4 +36,4 @@ def add_info_overlay(clip, video, pos, counter, total):
     if clip.size != [1920, 1080]:
         clip = clip.fx(vfx.resize, width=1920)
 
-    return CompositeVideoClip([clip, clip_text_title, clip_text_counter], size=(1920, 1080), use_bgclip=True)
+    return CompositeVideoClip([clip, clip_text_title, clip_text_counter], size=(1920, 1080))
