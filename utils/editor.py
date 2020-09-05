@@ -8,13 +8,14 @@ from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 def add_info_overlay(clip, video, pos, counter, total):
     video_id = video["id"]["videoId"]
     video_title = html.unescape(video["snippet"]["title"])
+    video_published_at = video["snippet"]["publishedAt"]
     start, _, end = video["data"]["timestamps"][pos - 1]
     episode_counter = str(pos)
     aligned_counter = str(counter).rjust(len(str(total)))
 
     clip_text_title = (
         TextClip(
-            txt=f"{video_title}\nhttps://youtube.com/watch?v={video_id}\nTime: {start}",
+            txt=f"{video_title}\nhttps://youtube.com/watch?v={video_id}\nTimestamp: {start}\nDate: {video_published_at}",
             fontsize=24,
             color="black",
             bg_color="white",
