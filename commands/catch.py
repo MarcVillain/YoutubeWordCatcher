@@ -102,7 +102,7 @@ def _write_saved_data(conf, path, func):
     if not conf.do_output_data:
         return data
 
-    logger.info(f"Dump value of '{path}'", prefix=conf.logger_prefix)
+    logger.debug(f"Dump value of '{path}'", prefix=conf.logger_prefix)
     io.dump_yaml(full_path, data)
     return data
 
@@ -111,7 +111,7 @@ def read_saved_data(conf, path, func, write=True, update=False):
     full_path = os.path.join(conf.data_folder, f"{path}.yaml")
 
     if not update and os.path.exists(full_path):
-        logger.info(f"Load value of '{path}'", prefix=conf.logger_prefix)
+        logger.debug(f"Load value of '{path}'", prefix=conf.logger_prefix)
         return io.load_yaml(full_path)
 
     if not write:
@@ -259,8 +259,6 @@ def _clip_list(conf, videos):
 def _build_final_video(conf, videos):
     logger.info("Build final clip")
 
-    # TODO: Check if final file already exists
-
     # Ensure build folder exists
     os.makedirs(conf.build_folder, exist_ok=True)
 
@@ -268,22 +266,20 @@ def _build_final_video(conf, videos):
     max_videos_amount = min(conf.max_videos_amount, len(videos))
     videos = videos[:max_videos_amount]
 
-    threshold = 61
+    threshold = 50
     total = sum(1 for _ in _clip_list(conf, videos))
 
     if total == 0:
         logger.info("No clips to build")
         return
 
-    video_clips_queue = deque([clip_info for clip_info in _clip_list(conf, videos)])
-    temp_clips_queue = deque([])
+    video_clips_queue = deque(read_saved_data(conf, os.path.join("build", "video_clips_queue"), lambda: [clip_info for clip_info in _clip_list(conf, videos)]))
+    temp_clips_queue = deque(read_saved_data(conf, os.path.join("build", "temp_clips_queue"), lambda: []))
 
-    temp_clips_files_counter = 1
+    temp_clips_files_counter = read_saved_data(conf, os.path.join("build", "temp_clips_files_counter"), lambda: 1)
 
     # While there are clips to concatenate
     while len(video_clips_queue) > 0 or len(temp_clips_queue) > 2:
-        # TODO: Preload [temp_clips_files_counter] file if it exists
-
         video_clips = []
         do_concatenate_videos_clips = len(video_clips_queue) > 0
 
@@ -357,9 +353,18 @@ def _build_final_video(conf, videos):
                     except OSError as e:
                         logger.error(f"Unable to remove clip: {e}")
 
+            # Save what happened in case something goes wrong to prevent having to start all over
+            _write_saved_data(conf, os.path.join("build", "video_clips_queue"), lambda: list(video_clips_queue))
+            _write_saved_data(conf, os.path.join("build", "temp_clips_queue"), lambda: list(temp_clips_queue))
+            _write_saved_data(conf, os.path.join("build", "temp_clips_files_counter"), lambda: temp_clips_files_counter)
+
     # Move final clip to desired result location
     last_temp_clip_file_path = temp_clips_queue[0] or temp_clips_queue[1]
     final_clip_file_path = os.path.join(conf.build_folder, f"{conf.channel_name}_{conf.word_to_extract}.mp4")
+
+    while os.path.exists(final_clip_file_path):
+        final_clip_file_path = final_clip_file_path.replace(".mp4", "") + f"_{uuid.uuid4()}"
+
     try:
         os.rename(last_temp_clip_file_path, final_clip_file_path)
     except OSError as e:
@@ -393,6 +398,8 @@ def run(args):
 
     if conf.do_generate_final_video:
         _build_final_video(conf, videos)
+
+    logger.info("Done!")
 
 
 def parse(prog, args):

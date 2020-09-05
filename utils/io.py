@@ -8,7 +8,7 @@ def load_yaml(file_path):
         return None
 
     with open(file_path, "r") as f:
-        return yaml.load(f, Loader=yaml.BaseLoader)
+        return yaml.load(f, Loader=yaml.FullLoader)
 
 
 def dump_yaml(file_path, data):
