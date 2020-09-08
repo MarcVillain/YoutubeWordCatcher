@@ -89,7 +89,9 @@ def _extract_timestamps(video_id, content, word_to_extract):
     logger.info(f"Extract timestamps where the word {word_to_extract} is pronounced", prefix=f"{video_id} >> ")
 
     pattern = r"<(\d{2}:\d{2}:\d{2}.\d{3})>([^<]+)<(\d{2}:\d{2}:\d{2}.\d{3})>"
-    return [match for match in regex.findall(pattern, content, overlapped=True) if word_to_extract in match[1]]
+    return [
+        match for match in regex.findall(pattern, content, overlapped=True) if regex.match(word_to_extract, match[1])
+    ]
 
 
 def _extract_time(video_id, content):
