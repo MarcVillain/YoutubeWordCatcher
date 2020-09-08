@@ -11,6 +11,7 @@ import pkgutil
 
 from commands.catch import read_saved_data
 from utils import config, logger
+from utils.convert import str_to_bool
 
 
 class Config:
@@ -48,8 +49,10 @@ class Config:
         """
         Switches
         """
-        self.do_output_file = bool(kwargs.get("do_output_file", False))
-        self.do_display_chart = bool(kwargs.get("do_display_chart", True))
+        # Should an output file be created?
+        self.do_output_file = str_to_bool(kwargs.get("do_output_file", "False"))
+        # Should the chart be displayed on screen?
+        self.do_display_chart = str_to_bool(kwargs.get("do_display_chart", "True"))
 
         """
         Filters

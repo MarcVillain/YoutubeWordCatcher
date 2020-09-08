@@ -13,7 +13,7 @@ from moviepy.video.compositing.concatenate import concatenate_videoclips
 from moviepy.video.io.VideoFileClip import VideoFileClip
 
 from utils import youtube, config, io, logger, subtitles, editor
-from utils.convert import str_to_sec
+from utils.convert import str_to_sec, str_to_bool
 
 
 class Config:
@@ -65,21 +65,21 @@ class Config:
         Switches
         """
         # Should the program data be outputted?
-        self.do_output_data = bool(kwargs.get("do_output_data", True))
+        self.do_output_data = str_to_bool(kwargs.get("do_output_data", "True"))
         # Should the text overlay be applied?
-        self.do_text_overlay = bool(kwargs.get("do_text_overlay", True))
+        self.do_text_overlay = str_to_bool(kwargs.get("do_text_overlay", "True"))
         # Should the downloaded files be deleted?
-        self.do_cleanup_downloads = bool(kwargs.get("do_cleanup_downloads", True))
+        self.do_cleanup_downloads = str_to_bool(kwargs.get("do_cleanup_downloads", "True"))
         # Should the video datas be computed even if they already exists?
-        self.do_override_video_data = bool(kwargs.get("do_override_video_data", False))
+        self.do_override_video_data = str_to_bool(kwargs.get("do_override_video_data", "False"))
         # Should the clips be generated even if they already exists?
-        self.do_override_clips = bool(kwargs.get("do_override_clips", False))
+        self.do_override_clips = str_to_bool(kwargs.get("do_override_clips", "False"))
         # Should the clips be generated?
-        self.do_generate_clips = bool(kwargs.get("do_generate_clips", True))
+        self.do_generate_clips = str_to_bool(kwargs.get("do_generate_clips", "True"))
         # Should the final video be generated?
-        self.do_generate_final_video = bool(kwargs.get("do_generate_final_video", True))
+        self.do_generate_final_video = str_to_bool(kwargs.get("do_generate_final_video", "True"))
         # Should the videos list data be updated?
-        self.do_update_video_data = bool(kwargs.get("do_update_video_data", False))
+        self.do_update_video_data = str_to_bool(kwargs.get("do_update_video_data", "False"))
 
         """
         Filters
