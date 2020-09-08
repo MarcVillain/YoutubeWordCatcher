@@ -30,6 +30,8 @@ class Config:
         self.channel_name = kwargs.get("channel_name", "")
         # Word to extract from the channel videos
         self.word_to_extract = kwargs.get("word_to_extract", "")
+        # Final resolution of the video (smaller and bigger clips will be resized)
+        self.resolution = kwargs.get("resolution", "1920x1080")
 
         """
         Youtube
