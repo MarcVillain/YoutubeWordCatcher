@@ -37,6 +37,14 @@ class Config:
         self.title_colors = dict(ast.literal_eval(kwargs.get("title_colors", "{}")))
 
         """
+        Words chart options
+        """
+        # If set, all words are black except for the given ones. Else, give random color to every word.
+        self.words_chart_words_color = dict(ast.literal_eval(kwargs.get("words_chart_words_color", "{}")))
+        # Maximum number of words to display on the chart (only get n first)
+        self.words_chart_max_words_display_count = int(kwargs.get("words_chart_max_words_display_count", 500))
+
+        """
         Folders
         """
         # The folder where everything was extracted

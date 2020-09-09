@@ -1,8 +1,10 @@
+import colorsys
 import os
 from time import strftime, gmtime
 
 from matplotlib import pyplot
 from matplotlib.patches import Patch
+from pandas import np
 
 from utils import logger
 
@@ -14,7 +16,19 @@ def pick_color(colors, text):
     return "black"
 
 
-def _apply_spacing(values, spacing):
+def gen_unique_colors(num_colors):
+    # https://stackoverflow.com/questions/470690/how-to-automatically-generate-n-distinct-colors
+    # Response by Uri Cohen:
+    colors = []
+    for i in np.arange(0., 360., 360. / num_colors):
+        hue = i/360.
+        lightness = (50 + np.random.rand() * 10)/100.
+        saturation = (90 + np.random.rand() * 10)/100.
+        colors.append(colorsys.hls_to_rgb(hue, lightness, saturation))
+    return colors
+
+
+def gen_spacing(values, spacing):
     # Fancy computing of spacing to choose
     spacing = int(len(values) / spacing)
     return [
@@ -24,11 +38,7 @@ def _apply_spacing(values, spacing):
     ]
 
 
-def _filter_keep(filter_video_titles, string):
-    return len(filter_video_titles) == 0 or any([True for f in filter_video_titles if f.lower() in string.lower()])
-
-
-def _generate_color_legend(colors):
+def gen_color_legend(colors):
     if len(colors) == 0:
         return
 
@@ -40,7 +50,7 @@ def _generate_color_legend(colors):
     pyplot.legend(handles=patches)
 
 
-def _plot_bar(x_vals, x_tags, x_colors):
+def _plot_bar(x_tags, x_vals, x_colors):
     """
     bar(...) => Plot the values
 
@@ -79,14 +89,14 @@ def _save(name, folder):
     return chart_file_path
 
 
-def gen_bar_chart(conf, videos, data_func):
+def gen_bar_chart(conf, videos, data_func, chart_func=None):
     logger.info("Compute the data")
     x_tags, x_vals, x_colors = data_func(conf, videos)
 
     logger.info("Build the chart")
-    x_tags = _apply_spacing(x_tags, conf.tag_spacing)
-    _generate_color_legend(conf.title_colors)
-    _plot_bar(x_vals, x_tags, x_colors)
+    if chart_func is not None:
+        x_tags, x_vals, x_colors = chart_func(conf, x_tags, x_vals, x_colors)
+    _plot_bar(x_tags, x_vals, x_colors)
 
     # Export the chart
     if conf.do_output_file:

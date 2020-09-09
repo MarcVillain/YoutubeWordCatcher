@@ -22,5 +22,11 @@ def _gen_data(conf, videos):
     return zip(*sorted(zip(x_tags, x_vals, x_colors)))
 
 
+def _gen_chart(conf, x_tags, x_vals, x_colors):
+    x_tags = charts.gen_spacing(x_tags, conf.tag_spacing)
+    charts.gen_color_legend(conf.title_colors)
+    return x_tags, x_vals, x_colors
+
+
 def compute(conf, videos):
-    charts.gen_bar_chart(conf, videos, _gen_data)
+    charts.gen_bar_chart(conf, videos, _gen_data, _gen_chart)
