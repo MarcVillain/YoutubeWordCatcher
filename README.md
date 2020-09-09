@@ -19,9 +19,24 @@ The available sections are:
 * **all** : will be loaded in every configuration
 * **command** : will be loaded only for the specified command (example: catch)
 
-You can find all the possible values for the configuration in the `__init__()` method of the `Config` classes, located at the top of the commands files in the `commands` folder.
+You can find all the possible values for the configuration in the `config.py` files located in the `commands` folder.
 
 Note that whenever there are dictionaries or lists, you can represent the data on a multiline but beware of the indentation.
+
+Example `config.ini`:
+```ini
+[all]
+channel_name=AwesomeChannel
+word_to_extract=hello
+
+[catch]
+api_key=XXX...XX
+
+[chart]
+title_colors = {
+               "Awesome Game": "red",
+               }
+```
 
 # Run
 
