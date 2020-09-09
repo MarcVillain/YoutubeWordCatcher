@@ -1,9 +1,7 @@
 """
-Average amount of extracted word per video over time
+Amount of extracted word per video over time
 """
-
 from utils import charts
-from utils.convert import str_to_sec
 
 
 def _gen_data(conf, videos):
@@ -13,17 +11,11 @@ def _gen_data(conf, videos):
         video_id = video["id"]["videoId"]
         video_title = video["snippet"]["title"]
         video_date = video["snippet"]["publishedAt"]
-        timestamps = video["data"].get("timestamps", [])
+        timestamps = video.get("data", {}).get("timestamps", [])
         color = charts.pick_color(conf.title_colors, video_title)
 
-        time = video["data"].get("time", None)
-        if time is not None:
-            video_time = str_to_sec(time)
-        else:
-            video_time = 0
-
         x_tags.append(f"{video_date} ({video_id})")
-        x_vals.append(len(timestamps) / video_time if video_time != 0 else 0)
+        x_vals.append(len(timestamps))
         x_colors.append(color)
 
     # Return sorted results by tag

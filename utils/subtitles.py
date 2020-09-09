@@ -1,14 +1,6 @@
 import difflib
 import re
 
-from regex import regex
-
-from utils import logger
-
-"""
-VTT Handling
-"""
-
 
 def _concat_str(str_a, str_b):
     i = 0
@@ -55,7 +47,7 @@ def _match_str(str_a, str_b):
     return False
 
 
-def _clean_vtt(file):
+def clean_vtt(file):
     """
     Manually parsing since Youtube's vtt format is messed up
     """
@@ -78,42 +70,3 @@ def _clean_vtt(file):
             content += line
 
     return content
-
-
-"""
-Data extraction
-"""
-
-
-def _extract_timestamps(video_id, content, word_to_extract):
-    logger.info(f"Extract timestamps where the word {word_to_extract} is pronounced", prefix=f"{video_id} >> ")
-
-    pattern = r"<(\d{2}:\d{2}:\d{2}.\d{3})>([^<]+)<(\d{2}:\d{2}:\d{2}.\d{3})>"
-    res = [
-        (start, word.strip(), end)
-        for start, word, end in regex.findall(pattern, content, overlapped=True)
-        if regex.match(word_to_extract, word.strip())
-    ]
-    logger.debug(f"Extracted {len(res)} words")
-    return res
-
-
-def _extract_time(video_id, content):
-    logger.info("Extract time of the video", prefix=f"{video_id} >> ")
-
-    # This is an approximation of the video length based on the last timestamp
-    # TODO: Find a way to get the real video length
-    #       without having to download the video clip
-    pattern = r"\d{2}:\d{2}:\d{2}.\d{3}"
-    res = [match for match in regex.findall(pattern, content, overlapped=True)][-1]
-    logger.debug(f"Extracted time of {res}")
-    return res
-
-
-def extract_data(video_id, subtitles_file_path, word_to_extract):
-    with open(subtitles_file_path, "r") as f:
-        content = _clean_vtt(f)
-        return {
-            "timestamps": _extract_timestamps(video_id, content, word_to_extract),
-            "time": _extract_time(video_id, content),
-        }

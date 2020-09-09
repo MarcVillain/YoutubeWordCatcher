@@ -7,8 +7,7 @@ import sys
 from utils import logger
 
 
-def parse():
-    # Extract commands
+def _extract_commands():
     module_names = [module.name for module in pkgutil.iter_modules(["commands"])]
     commands = {}
     for module_name in module_names:
@@ -19,9 +18,14 @@ def parse():
                 "func_parse": module.__getattribute__("parse"),
                 "func_run": module.__getattribute__("run"),
             }
+    return commands
 
-    # Build usage and description string
+
+def _build_usage_and_desc(commands):
+    # Build usage
     usage = "ywc [-h] [-v] <command> [options]"
+
+    # Build description
     description = (
         "Extract every clip of a Youtube channel's videos where a specific word is\n"
         "pronounced and build a big video out of it.\n\n"
@@ -32,6 +36,14 @@ def parse():
         command_name = command_name.ljust(command_max_len)
         command_desc = command["description"]
         description += f"\n    {command_name}{command_desc}"
+
+    return usage, description
+
+
+def parse():
+    # Get CLI information
+    commands = _extract_commands()
+    usage, description = _build_usage_and_desc(commands)
 
     # Build parser
     parser = argparse.ArgumentParser(
