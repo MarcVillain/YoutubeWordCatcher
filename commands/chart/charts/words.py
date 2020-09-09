@@ -1,5 +1,5 @@
 """
-Number of apparition of each matched word
+Frequence of apparition of each matched word
 """
 from utils import charts
 
