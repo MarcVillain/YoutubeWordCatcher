@@ -20,10 +20,10 @@ def gen_unique_colors(num_colors):
     # https://stackoverflow.com/questions/470690/how-to-automatically-generate-n-distinct-colors
     # Response by Uri Cohen:
     colors = []
-    for i in np.arange(0., 360., 360. / num_colors):
-        hue = i/360.
-        lightness = (50 + np.random.rand() * 10)/100.
-        saturation = (90 + np.random.rand() * 10)/100.
+    for i in np.arange(0.0, 360.0, 360.0 / num_colors):
+        hue = i / 360.0
+        lightness = (50 + np.random.rand() * 10) / 100.0
+        saturation = (90 + np.random.rand() * 10) / 100.0
         colors.append(colorsys.hls_to_rgb(hue, lightness, saturation))
     return colors
 

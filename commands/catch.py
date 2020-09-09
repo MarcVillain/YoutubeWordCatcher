@@ -70,6 +70,8 @@ class Config:
         self.do_text_overlay = str_to_bool(kwargs.get("do_text_overlay", "True"))
         # Should the downloaded files be deleted?
         self.do_cleanup_downloads = str_to_bool(kwargs.get("do_cleanup_downloads", "True"))
+        # Should the temporary clips files be deleted?
+        self.do_cleanup_temporary_clips = str_to_bool(kwargs.get("do_cleanup_temporary_clips", "True"))
         # Should the video datas be computed even if they already exists?
         self.do_override_video_data = str_to_bool(kwargs.get("do_override_video_data", "False"))
         # Should the clips be generated even if they already exists?
@@ -96,6 +98,8 @@ class Config:
         self.max_videos_amount = int(kwargs.get("max_videos_amount", 100000))
         # Maximum amount of threads to use when retrieving video data and cutting clips
         self.max_data_thread_workers = int(kwargs.get("max_data_thread_workers", 1))
+        # Maximum amount of threads to use when wrinting a video clip to disk
+        self.max_video_write_thread_workers = int(kwargs.get("max_video_write_thread_workers", 1))
         # Maximum number of files to open at once
         # This is useful when building the last clip as MoviePy creates a file
         # directory for every clip we open, so we have to do them by batches
@@ -177,7 +181,7 @@ def _extract_video_clips(conf, video_id, video_data):
         video_clip = VideoFileClip(dl["video_file"]["path"])
         try:
             timestamps = video_data.get("timestamps", [])
-            for i, (start, _, end) in enumerate(timestamps):
+            for i, (start, word, end) in enumerate(timestamps):
                 clip_pos = str(i + 1).rjust(len(str(len(timestamps))))
                 logger.info(f"Extract video clip ({clip_pos}/{len(timestamps)})", prefix=conf.logger_prefix)
 
@@ -191,15 +195,25 @@ def _extract_video_clips(conf, video_id, video_data):
                 subclip = video_clip.subclip(video_start, video_end)
 
                 # Create destination
-                subclip_file_path = os.path.join(conf.output_folder, "clips", video_id, f"{clip_pos}.mp4")
-                subclip_audio_file_path = subclip_file_path.replace(".mp4", ".mp3")
-                os.makedirs(os.path.dirname(subclip_file_path), exist_ok=True)
+                subclip_video_file_subpath = os.path.join("clips", video_id, f"{clip_pos}_{word}.mp4")
+                subclip_video_file_path = os.path.join(conf.output_folder, subclip_video_file_subpath)
+                subclip_audio_file_path = subclip_video_file_path.replace(".mp4", ".mp3")
+                os.makedirs(os.path.dirname(subclip_video_file_path), exist_ok=True)
 
                 # Save clip
-                subclip.write_videofile(
-                    subclip_file_path, temp_audiofile=subclip_audio_file_path, bitrate="20000k", audio_bitrate="2000k"
-                )
-                clips.append(subclip_file_path)
+                if os.path.exists(subclip_video_file_path) and not os.path.exists(subclip_audio_file_path):
+                    logger.info(f"Use existing video clip '{subclip_video_file_subpath}'")
+                else:
+                    logger.info(f"Save video clip '{subclip_video_file_subpath}'")
+                    subclip.write_videofile(
+                        subclip_video_file_path,
+                        temp_audiofile=subclip_audio_file_path,
+                        bitrate="20000k",
+                        audio_bitrate="2000k",
+                        threads=conf.max_video_write_thread_workers,
+                    )
+
+                clips.append(subclip_video_file_path)
         finally:
             video_clip.close()
 
@@ -233,6 +247,9 @@ def _process_video(conf, videos, i):
             logger.info("Unable to load video data", prefix=conf.logger_prefix)
             return
         _write_saved_data(conf, video_saved_data_path, lambda: video_data)
+
+    timestamps_count = len(video_data.get("timestamps", []))
+    logger.debug(f"Loaded {timestamps_count} timestamps", prefix=conf.logger_prefix)
 
     if conf.do_generate_clips and (conf.do_override_clips or video_data.get("clips", None) is None):
         clips = _extract_video_clips(conf, video_id, video_data)
@@ -278,6 +295,8 @@ def _build_final_video(conf, videos):
     threshold = conf.max_open_files
     total = sum(1 for _ in _clip_list(conf, videos))
 
+    conf.logger_prefix = "> "
+
     if total == 0:
         logger.info("No clips to build")
         return
@@ -290,12 +309,12 @@ def _build_final_video(conf, videos):
         )
     )
     temp_clips_queue = deque(read_saved_data(conf, os.path.join("build", "temp_clips_queue"), lambda: []))
-
     temp_clips_files_counter = read_saved_data(conf, os.path.join("build", "temp_clips_files_counter"), lambda: 1)
 
     # While there are clips to concatenate
     while len(video_clips_queue) > 0 or len(temp_clips_queue) > 2:
         video_clips = []
+        is_line_ended = False
         do_concatenate_videos_clips = len(video_clips_queue) > 0
 
         if do_concatenate_videos_clips:
@@ -317,10 +336,13 @@ def _build_final_video(conf, videos):
                 )
                 video_clip = VideoFileClip(clip)
                 if conf.do_text_overlay:
-                    video_clip = editor.add_info_overlay(video_clip, video, pos, counter, total)
+                    video_clip = editor.add_info_overlay(video_clip, conf.resolution, video, pos, counter, total)
 
                 # Add video clip to list
                 video_clips.append(video_clip)
+
+            # Check if we have a line of ordered temporary clips
+            is_line_ended = len(video_clips_queue) == 0
         else:
             # Create the group of temporary clips videos to be concatenated
             clips_group = []
@@ -331,32 +353,49 @@ def _build_final_video(conf, videos):
                     if len(clips_group) == 1:
                         # Nothing to change or build really, just push pack the video file
                         temp_clips_queue.append(clips_group[0])
+                        temp_clips_queue.append(None)
                         clips_group = []
-                    # Ensure we are marking the build loop to prevent de-ordering
-                    temp_clips_queue.append(None)
+                    else:
+                        # We need to build the last temporary clip then insert a None
+                        # to mark the end of the ordered temporary clips
+                        is_line_ended = True
                     break
+
                 clips_group.append(temp_clip)
 
             # Add video clips to list
-            video_clips = [VideoFileClip(clip) for clip in clips_group]
+            total_log = str(len(clips_group))
+            for i, clip in enumerate(clips_group):
+                pos_log = str(i + 1).rjust(len(total_log))
+                logger.info(f"Load temporary clip '{os.path.basename(clip)}'", prefix=f"[{pos_log}/{total_log}] >> ")
+                video_clips.append(VideoFileClip(clip))
 
         if len(video_clips) > 0:
             logger.info("Concatenate clips into a temporary clip")
             temp_clip = concatenate_videoclips(video_clips, method="compose")
 
-            logger.info(f"Save temporary clip {temp_clips_files_counter}")
-            temp_clip_file_path = os.path.join(conf.build_folder, f"t{threshold}_c{temp_clips_files_counter}.mp4")
-            temp_clip_audio_file_path = temp_clip_file_path.replace(".mp4", ".mp3")
-            temp_clip.write_videofile(
-                temp_clip_file_path, temp_audiofile=temp_clip_audio_file_path, bitrate="20000k", audio_bitrate="2000k"
-            )
+            temp_clip_video_file_subpath = f"t{threshold}_c{temp_clips_files_counter}.mp4"
+            temp_clip_video_file_path = os.path.join(conf.build_folder, temp_clip_video_file_subpath)
+            temp_clip_audio_file_path = temp_clip_video_file_path.replace(".mp4", ".mp3")
+            if os.path.exists(temp_clip_video_file_path) and not os.path.exists(temp_clip_audio_file_path):
+                logger.info(f"Use existing temporary clip '{temp_clip_video_file_subpath}'")
+            else:
+                logger.info(f"Save temporary clip '{temp_clip_video_file_subpath}'")
+                temp_clip.write_videofile(
+                    temp_clip_video_file_path,
+                    temp_audiofile=temp_clip_audio_file_path,
+                    bitrate="20000k",
+                    audio_bitrate="2000k",
+                    threads=conf.max_video_write_thread_workers,
+                )
+
             temp_clips_files_counter += 1
 
             # Add temporary clip to list
-            temp_clips_queue.append(temp_clip_file_path)
+            temp_clips_queue.append(temp_clip_video_file_path)
 
             # Ensure we are marking the build loop to prevent de-ordering
-            if do_concatenate_videos_clips and len(video_clips_queue) == 0:
+            if is_line_ended:
                 temp_clips_queue.append(None)
 
             # Close videos clips file descriptors
@@ -372,7 +411,7 @@ def _build_final_video(conf, videos):
 
             # Cleanup temporary clips
             # (remove clips that got concatenated into another clip and are no longer needed)
-            if not do_concatenate_videos_clips:
+            if not do_concatenate_videos_clips and conf.do_cleanup_temporary_clips:
                 for video_clip in video_clips:
                     try:
                         logger.info(f"Remove temporary clip '{os.path.basename(video_clip.filename)}'")
@@ -390,7 +429,7 @@ def _build_final_video(conf, videos):
     final_clip_file_path = os.path.join(conf.build_folder, f"{conf.channel_name}_{conf.word_to_extract}.mp4")
 
     while os.path.exists(final_clip_file_path):
-        final_clip_file_path = f"{final_clip_file_path[:-4]}_{uuid.uuid4()[:6]}.mp4"
+        final_clip_file_path = f"{final_clip_file_path[:-4]}_{str(uuid.uuid4())[:6]}.mp4"
 
     try:
         os.rename(last_temp_clip_file_path, final_clip_file_path)

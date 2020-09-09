@@ -89,9 +89,13 @@ def _extract_timestamps(video_id, content, word_to_extract):
     logger.info(f"Extract timestamps where the word {word_to_extract} is pronounced", prefix=f"{video_id} >> ")
 
     pattern = r"<(\d{2}:\d{2}:\d{2}.\d{3})>([^<]+)<(\d{2}:\d{2}:\d{2}.\d{3})>"
-    return [
-        match for match in regex.findall(pattern, content, overlapped=True) if regex.match(word_to_extract, match[1])
+    res = [
+        (start, word.strip(), end)
+        for start, word, end in regex.findall(pattern, content, overlapped=True)
+        if regex.match(word_to_extract, word.strip())
     ]
+    logger.debug(f"Extracted {len(res)} words")
+    return res
 
 
 def _extract_time(video_id, content):
@@ -101,7 +105,9 @@ def _extract_time(video_id, content):
     # TODO: Find a way to get the real video length
     #       without having to download the video clip
     pattern = r"\d{2}:\d{2}:\d{2}.\d{3}"
-    return [match for match in regex.findall(pattern, content, overlapped=True)][-1]
+    res = [match for match in regex.findall(pattern, content, overlapped=True)][-1]
+    logger.debug(f"Extracted time of {res}")
+    return res
 
 
 def extract_data(video_id, subtitles_file_path, word_to_extract):
