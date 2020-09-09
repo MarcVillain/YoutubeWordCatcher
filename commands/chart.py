@@ -73,6 +73,8 @@ class Config:
         """
         Thresholds
         """
+        # Maximum amount of videos to download, cut and compose
+        self.max_videos_amount = int(kwargs.get("max_videos_amount", 100000))
         # Above the specified 'n' spacing, make the tags appear every so often
         # example: 40 elements with a space of 20 will have a tag appear every one in two.
         self.tag_spacing = int(kwargs.get("tag_spacing", 20))
@@ -85,15 +87,15 @@ def run(args):
 
     # Load videos and their data
     videos = read_saved_data(conf, "videos", lambda: [], write=False)
-    videos_len = len(videos)
-    for i in range(videos_len):
+    max_videos_amount = min(conf.max_videos_amount, len(videos))
+    for i in range(max_videos_amount):
         video_id = videos[i]["id"]["videoId"]
         video_saved_data_path = os.path.join("videos", video_id)
 
-        pos_log = str(i + 1).rjust(len(str(videos_len)))
-        conf.logger_prefix = f"({pos_log}/{videos_len}) {video_id} >> "
+        pos_log = str(i + 1).rjust(len(str(max_videos_amount)))
+        conf.logger_prefix = f"({pos_log}/{max_videos_amount}) {video_id} >> "
 
-        logger.info("Retrieve video data", prefix=conf.logger_prefix)
+        logger.info("Read saved video data", prefix=conf.logger_prefix)
         video_data = read_saved_data(conf, video_saved_data_path, lambda: {}, write=False)
         videos[i]["data"] = video_data
 
