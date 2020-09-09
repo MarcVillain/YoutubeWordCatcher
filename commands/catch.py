@@ -293,11 +293,11 @@ def _build_final_video(conf, videos):
     videos = videos[:max_videos_amount]
 
     threshold = conf.max_open_files
-    total = sum(1 for _ in _clip_list(conf, videos))
+    total_clips_count = sum(1 for _ in _clip_list(conf, videos))
 
     conf.logger_prefix = "> "
 
-    if total == 0:
+    if total_clips_count == 0:
         logger.info("No clips to build")
         return
 
@@ -328,15 +328,17 @@ def _build_final_video(conf, videos):
                 video_id = video["id"]["videoId"]
                 clips_count_log = str(len(video["data"]["clips"]))
                 pos_log = str(pos).rjust(len(clips_count_log))
-                counter_log = str(counter).rjust(len(str(total)))
+                counter_log = str(counter).rjust(len(str(total_clips_count)))
                 i_log = str(i + 1).rjust(len(str(threshold)))
                 logger.info(
                     f"Build clip {pos_log}/{clips_count_log} of {video_id}",
-                    prefix=f"[{counter_log}/{total}|{i_log}/{threshold}] >> ",
+                    prefix=f"[{counter_log}/{total_clips_count}|{i_log}/{threshold}] >> ",
                 )
                 video_clip = VideoFileClip(clip)
                 if conf.do_text_overlay:
-                    video_clip = editor.add_info_overlay(video_clip, conf.resolution, video, pos, counter, total)
+                    video_clip = editor.add_info_overlay(
+                        video_clip, conf.resolution, video, pos, counter, total_clips_count
+                    )
 
                 # Add video clip to list
                 video_clips.append(video_clip)

@@ -18,7 +18,7 @@ def _gen_data(conf, videos):
     amount_list = sorted([(amount, word) for word, amount in amount_dict.items()])
 
     # Get only part of the dataset
-    amount_list = amount_list[-conf.words_chart_max_words_display_count:]
+    amount_list = amount_list[-conf.words_chart_max_words_display_count :]
 
     # Plot data
     x_tags, x_vals = [], []
