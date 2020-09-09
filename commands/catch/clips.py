@@ -8,7 +8,7 @@ def list_for(conf, videos):
         if len(conf.filter_out_videos_ids) > 0 and (video_id in conf.filter_out_videos_ids):
             continue
 
-        if len(video["data"].get("clips", [])) > 0:
-            for i, clip in enumerate(video["data"]["clips"]):
-                counter += 1
-                yield video, clip, i + 1, counter
+        clips = video.get("data", {}).get("clips", [])
+        for i, clip in enumerate(clips):
+            counter += 1
+            yield video, clip, i + 1, counter

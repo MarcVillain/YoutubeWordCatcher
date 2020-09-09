@@ -56,7 +56,7 @@ def final_video(conf, videos):
             for i, (video, clip, pos, counter) in enumerate(clips_group):
                 # Build video clip
                 video_id = video["id"]["videoId"]
-                clips_count_log = str(len(video["data"]["clips"]))
+                clips_count_log = str(len(video.get("data", {}).get("clips", [])))
                 pos_log = str(pos).rjust(len(clips_count_log))
                 counter_log = str(counter).rjust(len(str(total_clips_count)))
                 i_log = str(i + 1).rjust(len(str(threshold)))
