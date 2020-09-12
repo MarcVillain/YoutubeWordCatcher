@@ -18,18 +18,7 @@ def run(args):
     conf.logger_prefix = "> "
 
     # Load videos and their data
-    videos = saved_data.read(conf, "videos", lambda: [], write=False)
-    max_videos_amount = min(conf.max_videos_amount, len(videos))
-    for i in range(max_videos_amount):
-        video_id = videos[i]["id"]["videoId"]
-        video_saved_data_path = os.path.join("videos", video_id)
-
-        pos_log = str(i + 1).rjust(len(str(max_videos_amount)))
-        conf.logger_prefix = f"({pos_log}/{max_videos_amount}) {video_id} >> "
-
-        logger.info("Read saved video data", prefix=conf.logger_prefix)
-        video_data = saved_data.read(conf, video_saved_data_path, lambda: {}, write=False)
-        videos[i]["data"] = video_data
+    videos = saved_data.read_videos(conf)
 
     # Apply video filters
     if len(conf.filter_videos_ids) > 0:

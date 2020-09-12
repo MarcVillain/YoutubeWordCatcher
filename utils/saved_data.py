@@ -32,3 +32,22 @@ def read(conf, path, func, write=True, update=False):
         return func()
 
     return _write(conf, path, func)
+
+
+def read_videos(conf):
+    videos = read(conf, "videos", lambda: [], write=False)
+    max_videos_amount = min(conf.max_videos_amount, len(videos))
+    videos = videos[:max_videos_amount]
+
+    for i in range(max_videos_amount):
+        video_id = videos[i]["id"]["videoId"]
+        video_saved_data_path = os.path.join("videos", video_id)
+
+        pos_log = str(i + 1).rjust(len(str(max_videos_amount)))
+        conf.logger_prefix = f"({pos_log}/{max_videos_amount}) {video_id} >> "
+
+        logger.info("Read saved video data", prefix=conf.logger_prefix)
+        video_data = read(conf, video_saved_data_path, lambda: {}, write=False)
+        videos[i]["data"] = video_data
+
+    return videos

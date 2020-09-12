@@ -16,9 +16,9 @@ def _extract_timestamps(video_id, content, word_to_extract):
 
     pattern = r"<(\d{2}:\d{2}:\d{2}.\d{3})>([^<]+)<(\d{2}:\d{2}:\d{2}.\d{3})>"
     res = [
-        (start, word.strip(), end)
+        (start, word.lower().strip(), end)
         for start, word, end in regex.findall(pattern, content, overlapped=True)
-        if regex.match(word_to_extract, word.strip())
+        if regex.match(word_to_extract, word.lower().strip())
     ]
     logger.debug(f"Extracted {len(res)} words")
     return res

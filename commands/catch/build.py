@@ -20,7 +20,7 @@ def final_video(conf, videos):
     videos = videos[:max_videos_amount]
 
     threshold = conf.max_open_files
-    total_clips_count = sum(1 for _ in clips.list_for(conf, videos))
+    total_clips_count = sum(1 for _ in clips.list_for(videos, conf.filter_videos_ids, conf.filter_out_videos_ids))
 
     conf.logger_prefix = "> "
 
@@ -34,7 +34,9 @@ def final_video(conf, videos):
         saved_data.read(
             conf,
             os.path.join("build", "video_clips_queue"),
-            lambda: [clip_info for clip_info in clips.list_for(conf, videos)],
+            lambda: [
+                clip_info for clip_info in clips.list_for(videos, conf.filter_videos_ids, conf.filter_out_videos_ids)
+            ],
         )
     )
     temp_clips_queue = deque(saved_data.read(conf, os.path.join("build", "temp_clips_queue"), lambda: []))
