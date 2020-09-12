@@ -1,6 +1,9 @@
 # Custom
 .idea/
 config.ini
+venv/
+venv
+venv.nosync
 
 # Created by https://www.toptal.com/developers/gitignore/api/linux,python,macos,vim,pycharm
 # Edit at https://www.toptal.com/developers/gitignore?templates=linux,python,macos,vim,pycharm
