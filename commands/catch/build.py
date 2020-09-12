@@ -6,8 +6,7 @@ from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from moviepy.video.compositing.concatenate import concatenate_videoclips
 from moviepy.video.io.VideoFileClip import VideoFileClip
 
-from commands.catch import clips
-from utils import logger, editor, saved_data
+from utils import logger, editor, saved_data, clips
 
 
 def final_video(conf, videos):
