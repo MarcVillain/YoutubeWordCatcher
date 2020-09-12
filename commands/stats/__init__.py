@@ -5,7 +5,7 @@ import argparse
 import re
 
 from commands.stats.config import StatsConfig
-from utils import config, saved_data, logger, clips
+from utils import config, saved_data, logger, clips, convert
 
 
 def run(args):
@@ -22,16 +22,36 @@ def run(args):
     number_of_videos = len(videos)
     number_of_words = 0
     wte_per_video = {}
+    most_amount_in_video = 0
+    most_amount_in_video_name = ""
+    most_average_in_video = 0
+    most_average_in_video_name = ""
 
     words = {}
     for video, (_, word, _), pos, counter in clips.list_for(videos, var="timestamps"):
         video_id = video["id"]["videoId"]
-        number_of_words += 1
+        video_title = video["snippet"]["title"]
 
+        number_of_words += 1
         words[word] = words.get(word, 0) + 1
+
+        timestamps = video.get("data", {}).get("timestamps", [])
+        time = video.get("data", {}).get("time", None)
+        if time is not None:
+            video_time = convert.str_to_sec(time)
+        else:
+            video_time = 0
+
+        average = len(timestamps) / video_time if video_time != 0 else 0
 
         if re.match(conf.word_to_extract, word):
             wte_per_video[video_id] = wte_per_video.get(video_id, 0) + 1
+            if wte_per_video[video_id] > most_amount_in_video:
+                most_amount_in_video = wte_per_video[video_id]
+                most_amount_in_video_name = video_title
+            if average > most_average_in_video:
+                most_average_in_video = average
+                most_average_in_video_name = video_title
 
     average_wte_per_video = 0 if number_of_words == 0 else sum(wte_per_video.values()) / number_of_words
 
@@ -58,6 +78,8 @@ def run(args):
     logger.info(f"Amount: {number_of_wte}", prefix=f"{conf.word_to_extract} >> ")
     logger.info(f"Position: {position_of_wte}", prefix=f"{conf.word_to_extract} >> ")
     logger.info(f"Average per video: {average_wte_per_video}", prefix=f"{conf.word_to_extract} >> ")
+    logger.info(f"Most amount in a video: {most_amount_in_video} times in '{most_amount_in_video_name}'", prefix=f"{conf.word_to_extract} >> ")
+    logger.info(f"Most per word in a video: {most_average_in_video} times in '{most_average_in_video_name}'", prefix=f"{conf.word_to_extract} >> ")
 
 
 def parse(prog, args):
