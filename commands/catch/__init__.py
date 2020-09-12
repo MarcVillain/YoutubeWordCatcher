@@ -5,9 +5,9 @@ import argparse
 from concurrent.futures.thread import ThreadPoolExecutor
 from copy import deepcopy
 
-from commands.catch import saved_data, process, build
+from commands.catch import process, build
 from commands.catch.config import CatchConfig
-from utils import config, logger, youtube
+from utils import config, logger, youtube, saved_data
 
 
 def run(args):

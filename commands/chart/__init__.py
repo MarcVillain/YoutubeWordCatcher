@@ -8,9 +8,8 @@ import math
 import os
 import pkgutil
 
-from commands.catch import saved_data
 from commands.chart.config import ChartConfig
-from utils import config, logger
+from utils import config, logger, saved_data
 
 
 def run(args):

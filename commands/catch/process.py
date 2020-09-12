@@ -1,7 +1,7 @@
 import os
 
-from commands.catch import extract, saved_data
-from utils import logger
+from commands.catch import extract
+from utils import logger, saved_data
 
 
 def video(conf, videos, i):
