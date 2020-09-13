@@ -62,6 +62,10 @@ python ymc.py chart --help
 
 You can look at the code to edit some variables if necessary, or add your own data visualization.
 
+# Example
+
+A complete example is available in [EXAMPLE.md](EXAMPLE.md).
+
 # Todo
 
 * Manual clip sorter to remove false positives
