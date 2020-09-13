@@ -1,7 +1,7 @@
 YoutubeWordCatcher - Example
 ===
 
-This example showcases the use of the script on **EthosLab**'s Youtube channel and on the word "**actually**".
+This example showcases the use of the script on [EthosLab's Youtube channel](https://www.youtube.com/channel/UCFKDEp9si4RmHFWJW1vYsMA) and on the word "**actually**".
 
 # Configuration file
 
