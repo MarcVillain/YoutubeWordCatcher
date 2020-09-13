@@ -39,7 +39,7 @@ words_chart_max_words_display_count=200
 
 [Etho (feat. friends) - actually](https://www.youtube.com/channel/UCFKDEp9si4RmHFWJW1vYsMA)
 
-[![Etho (feat. friends) - actually](https://img.youtube.com/vi/mr89gFoqylo/0.jpg)](https://www.youtube.com/watch?v=mr89gFoqylo "Etho (feat. friends) - actually")
+[![etho (feat. friends) - actually](https://i9.ytimg.com/vi/mr89gFoqylo/hqdefault.jpg?sqp=CLzg9foF&rs=AOn4CLDvUEqzQU36zKDFTAE_yqY6SgztlA)](https://www.youtube.com/watch?v=mr89gFoqylo "Etho (feat. friends) - actually")
 
 # Charts
 
