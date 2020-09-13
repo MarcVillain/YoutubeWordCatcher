@@ -37,6 +37,8 @@ words_chart_max_words_display_count=200
 
 # Generated video
 
+[Etho (feat. friends) - actually](https://www.youtube.com/channel/UCFKDEp9si4RmHFWJW1vYsMA)
+
 [![Etho (feat. friends) - actually](https://img.youtube.com/vi/mr89gFoqylo/0.jpg)](https://www.youtube.com/watch?v=mr89gFoqylo "Etho (feat. friends) - actually")
 
 # Charts
