@@ -39,33 +39,19 @@ words_chart_max_words_display_count=200
 
 [Etho (feat. friends) - actually](https://www.youtube.com/channel/UCFKDEp9si4RmHFWJW1vYsMA)
 
-[![etho (feat. friends) - actually](https://i9.ytimg.com/vi/mr89gFoqylo/hqdefault.jpg?sqp=CLzg9foF&rs=AOn4CLDvUEqzQU36zKDFTAE_yqY6SgztlA)](https://www.youtube.com/watch?v=mr89gFoqylo "Etho (feat. friends) - actually")
+[![Etho (feat. friends) - actually](https://i9.ytimg.com/vi/mr89gFoqylo/hqdefault.jpg?sqp=CLzg9foF&rs=AOn4CLDvUEqzQU36zKDFTAE_yqY6SgztlA)](https://www.youtube.com/watch?v=mr89gFoqylo "Etho (feat. friends) - actually")
 
 # Charts
 
-### Amount
+| ![Amount of 'actually' per video](images/example_chart_amount.jpg?raw=True "") | ![Average amount of 'actually' per second, per video](images/example_chart_average.jpg?raw=True "Average amount of 'actually' per second, per video") |
+|:--:|:--:|
+| Type: amount | Type: average |
+| *Amount of 'actually' per video* | *Video's types repartition* |
 
-| ![Amount of 'actually' per video](images/example_chart_amount.jpg?raw=True "") |
-|:--:|
-| *Amount of 'actually' per video* |
-
-### Average
-
-| ![Average amount of 'actually' per second, per video](images/example_chart_average.jpg?raw=True "Average amount of 'actually' per second, per video") |
-|:--:|
-| *Average amount of 'actually' per second, per video* |
-
-### Color
-
-| ![Video's types repartition](images/example_chart_color.jpg?raw=True "Video's types repartition") |
-|:--:|
-| *Video's types repartition* |
-
-### Words
-
-| ![Words usage](images/example_chart_words.jpg?raw=True "Words usage") |
-|:--:|
-| *Words usage* |
+| ![Video's types repartition](images/example_chart_color.jpg?raw=True "Video's types repartition") | ![Words usage](images/example_chart_words.jpg?raw=True "Words usage") |
+|:--:|:--:|
+| Type: words | Type: color |
+| *Words usage* | *Video titles repartition* |
 
 # Stats
 
