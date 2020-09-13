@@ -23,21 +23,6 @@ You can find all the possible values for the configuration in the `config.py` fi
 
 Note that whenever there are dictionaries or lists, you can represent the data on a multiline but beware of the indentation.
 
-Example `config.ini`:
-```ini
-[all]
-channel_name=AwesomeChannel
-word_to_extract=hello
-
-[catch]
-api_key=XXX...XX
-
-[chart]
-title_colors = {
-               "Awesome Game": "red",
-               }
-```
-
 # Run
 
 In order to run properly, you need to get a Youtube API key, which you can obtain by following the instructions [here](https://developers.google.com/youtube/registering_an_application).
